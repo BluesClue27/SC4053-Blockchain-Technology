@@ -105,19 +105,82 @@ Key parameters in the smart contract:
 - **Maximum Outcomes**: 10 per market
 - **Minimum Creation Fee**: 0.001 ETH
 
-## 🚀 Deployment
+## 🚀 Local Development Setup
 
-### Local Deployment
+### Quick Start Guide for Team Members
 
-1. **Start local Hardhat network**
+#### Prerequisites Setup
+1. **Install Node.js** (v16 or later) from [nodejs.org](https://nodejs.org/)
+2. **Install MetaMask** browser extension from [metamask.io](https://metamask.io/)
+3. **Install Python** (for frontend server) - usually comes with Node.js
+
+#### Initial Setup (One-time)
+1. **Clone and install dependencies**
    ```bash
-   npm run node
+   git clone <your-repo-url>
+   cd prediction-market-dapp
+   npm install
    ```
 
-2. **Deploy contract to local network**
-   ```bash
-   npm run deploy:localhost
-   ```
+2. **Configure MetaMask for local development**
+   - Open MetaMask → Networks → Add Network
+   - **Network Name:** `Localhost 8545`
+   - **RPC URL:** `http://127.0.0.1:8545`
+   - **Chain ID:** `31337`
+   - **Currency Symbol:** `ETH`
+   - Save the network
+
+3. **Import test account to MetaMask**
+   - Click MetaMask account avatar → Import Account
+   - **Private Key:** `0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80`
+   - This gives you 10,000 ETH for testing
+
+#### Starting the Development Environment
+
+**Terminal 1: Start Blockchain**
+```bash
+npm run node
+```
+*Keep this running - shows blockchain activity*
+
+**Terminal 2: Deploy Smart Contract**
+```bash
+npm run deploy:localhost
+```
+*Copy the contract address from output*
+
+**Terminal 3: Start Frontend Server**
+```bash
+cd frontend
+python -m http.server 8080
+```
+
+**Browser: Open Application**
+1. Go to `http://localhost:8080`
+2. Switch MetaMask to "Localhost 8545" network
+3. Click "Connect Wallet"
+4. You should see your balance (~10,000 ETH)
+
+#### Stopping Everything
+1. Press `Ctrl+C` in all three terminals
+2. MetaMask will automatically disconnect
+
+#### Troubleshooting
+- **"MetaMask not detected"**: Ensure you're using `http://localhost:8080`, not opening HTML file directly
+- **"Wrong network"**: Switch MetaMask to "Localhost 8545"
+- **"No test ETH"**: Import the test account with the private key above
+- **Contract errors**: Make sure you deployed with `npm run deploy:localhost`
+
+#### Test Account Details
+- **Address:** `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266`
+- **Private Key:** `0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80`
+- **Balance:** 10,000 ETH
+- **Use for:** Creating markets (use different account as arbitrator)
+
+#### For Creating Markets
+- **Arbitrator Address:** Use `0x70997970C51812dc3A010C7d01b50e0d17dc79C8` (Account #1)
+- **Creation Fee:** Minimum 0.001 ETH
+- **Resolution Time:** Must be at least 1 hour in the future
 
 ### Testnet Deployment
 

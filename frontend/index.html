@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prediction Market DApp</title>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .wallet-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #00d2ff, #3a7bd5);
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+
+        .tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px 20px;
+            background: none;
+            border: none;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .outcomes-container {
+            margin-bottom: 20px;
+        }
+
+        .outcome-input {
+            display: flex;
+            margin-bottom: 10px;
+            gap: 10px;
+        }
+
+        .outcome-input input {
+            flex: 1;
+        }
+
+        .market-card {
+            border-left: 4px solid #667eea;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .market-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            border-radius: 50%;
+            transform: translate(50%, -50%);
+        }
+
+        .market-header {
+            display: flex;
+            justify-content: between;
+            align-items: start;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .market-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #333;
+            flex: 1;
+        }
+
+        .market-status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-resolved {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .status-expired {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .outcomes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .outcome-option {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .outcome-option:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .outcome-option.selected {
+            background: rgba(102, 126, 234, 0.1);
+            border-color: #667eea;
+        }
+
+        .outcome-name {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .outcome-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .probability-bar {
+            height: 4px;
+            background: #e9ecef;
+            border-radius: 2px;
+            margin: 8px 0;
+            overflow: hidden;
+        }
+
+        .probability-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.5s ease;
+        }
+
+        .bet-form {
+            display: flex;
+            gap: 10px;
+            align-items: end;
+            margin-top: 15px;
+        }
+
+        .bet-form input {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .market-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e9ecef;
+            font-size: 0.9rem;
+        }
+
+        .info-item {
+            text-align: center;
+        }
+
+        .info-label {
+            color: #666;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            color: #333;
+            font-weight: 700;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .no-markets {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .no-markets h3 {
+            margin-bottom: 10px;
+            color: #999;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .wallet-info {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .outcomes-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .bet-form {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔮 Prediction Market</h1>
+            <p>Decentralized prediction markets on Ethereum</p>
+            <div class="wallet-info">
+                <div>
+                    <span id="walletAddress">Not Connected</span>
+                    <span id="walletBalance"></span>
+                </div>
+                <button class="btn" onclick="connectWallet()" id="connectBtn">Connect Wallet</button>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('markets')">Browse Markets</button>
+            <button class="tab" onclick="switchTab('create')">Create Market</button>
+            <button class="tab" onclick="switchTab('my-bets')">My Bets</button>
+        </div>
+
+        <div id="error-message" class="error" style="display: none;"></div>
+        <div id="success-message" class="success" style="display: none;"></div>
+
+        <!-- Browse Markets Tab -->
+        <div id="markets-tab" class="tab-content active">
+            <div class="card">
+                <h2>Active Markets</h2>
+                <div id="activeMarkets" class="loading">Loading active markets...</div>
+            </div>
+            <div class="card">
+                <h2>Resolved Markets</h2>
+                <div id="resolvedMarkets" class="loading">Loading resolved markets...</div>
+            </div>
+        </div>
+
+        <!-- Create Market Tab -->
+        <div id="create-tab" class="tab-content">
+            <div class="card">
+                <h2>Create New Prediction Market</h2>
+                <form onsubmit="createMarket(event)">
+                    <div class="form-group">
+                        <label for="description">Market Description</label>
+                        <textarea id="description" rows="3" placeholder="What event do you want people to predict?" required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Possible Outcomes</label>
+                        <div class="outcomes-container" id="outcomesContainer">
+                            <div class="outcome-input">
+                                <input type="text" placeholder="Outcome 1 (e.g., Yes)" required>
+                                <button type="button" class="btn btn-danger btn-small" onclick="removeOutcome(this)">Remove</button>
+                            </div>
+                            <div class="outcome-input">
+                                <input type="text" placeholder="Outcome 2 (e.g., No)" required>
+                                <button type="button" class="btn btn-danger btn-small" onclick="removeOutcome(this)">Remove</button>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-small" onclick="addOutcome()">Add Outcome</button>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="resolutionTime">Resolution Date & Time</label>
+                        <input type="datetime-local" id="resolutionTime" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="arbitrator">Arbitrator Address</label>
+                        <input type="text" id="arbitrator" placeholder="0x..." pattern="^0x[a-fA-F0-9]{40}$" required>
+                        <small>Address of the trusted party who will resolve this market</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="creationFee">Creation Fee (ETH)</label>
+                        <input type="number" id="creationFee" step="0.001" min="0.001" value="0.001" required>
+                        <small>Minimum 0.001 ETH required to create a market</small>
+                    </div>
+                    
+                    <button type="submit" class="btn" style="width: 100%;">Create Market</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- My Bets Tab -->
+        <div id="my-bets-tab" class="tab-content">
+            <div class="card">
+                <h2>My Bets</h2>
+                <div id="myBets" class="loading">Loading your bets...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Contract configuration
+        const CONTRACT_ADDRESS = '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0'; // Replace with deployed contract address
+        const CONTRACT_ABI = [
+            // Add your contract ABI here
+            "function createMarket(string memory _description, string[] memory _outcomes, uint256 _resolutionTime, address _arbitrator) external payable returns (uint256)",
+            "function placeBet(uint256 _marketId, uint256 _outcome) external payable",
+            "function getMarketInfo(uint256 _marketId) external view returns (tuple(uint256 id, string description, string[] outcomes, uint256 resolutionTime, address creator, address arbitrator, bool resolved, uint256 winningOutcome, uint256 totalBets, uint256[] outcomeTotals, uint256 createdAt))",
+            "function getAllActiveMarkets() external view returns (uint256[] memory)",
+            "function getAllResolvedMarkets() external view returns (uint256[] memory)",
+            "function getUserBets(address _user) external view returns (tuple(uint256 marketId, uint256 outcome, uint256 amount, uint256 timestamp)[] memory)",
+            "function getOutcomeProbabilities(uint256 _marketId) external view returns (uint256[] memory)",
+            "function withdrawWinnings(uint256 _marketId) external",
+            "function resolveMarket(uint256 _marketId, uint256 _winningOutcome) external"
+        ];
+
+        let provider, signer, contract, userAddress;
+        let selectedOutcome = null;
+        let selectedMarketId = null;
+
+        // Initialize the app
+        window.addEventListener('load', async () => {
+            setMinDateTime();
+            if (typeof window.ethereum !== 'undefined') {
+                console.log('MetaMask detected');
+                // Check if already connected
+                const accounts = await ethereum.request({ method: 'eth_accounts' });
+                if (accounts.length > 0) {
+                    await connectWallet();
+                }
+            }
+        });
+
+        function setMinDateTime() {
+            const now = new Date();
+            now.setHours(now.getHours() + 1); // Minimum 1 hour from now
+            const minDateTime = now.toISOString().slice(0, 16);
+            document.getElementById('resolutionTime').min = minDateTime;
+        }
+
+        async function connectWallet() {
+            try {
+                if (typeof window.ethereum === 'undefined') {
+                    throw new Error('MetaMask not detected');
+                }
+
+                await ethereum.request({ method: 'eth_requestAccounts' });
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                signer = provider.getSigner();
+                userAddress = await signer.getAddress();
+                
+                // Initialize contract
+                contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+                // Update UI
+                document.getElementById('walletAddress').textContent = `${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`;
+                document.getElementById('connectBtn').textContent = 'Connected';
+                document.getElementById('connectBtn').disabled = true;
+
+                // Get balance
+                const balance = await provider.getBalance(userAddress);
+                document.getElementById('walletBalance').textContent = `(${ethers.utils.formatEther(balance).slice(0, 6)} ETH)`;
+
+                // Load data
+                await loadActiveMarkets();
+                await loadResolvedMarkets();
+                await loadMyBets();
+
+                // Listen for account changes
+                ethereum.on('accountsChanged', (accounts) => {
+                    if (accounts.length === 0) {
+                        location.reload();
+                    } else {
+                        location.reload();
+                    }
+                });
+
+            } catch (error) {
+                showError('Failed to connect wallet: ' + error.message);
+            }
+        }
+
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(tabName + '-tab').classList.add('active');
+
+            // Load data for the active tab
+            if (tabName === 'markets' && contract) {
+                loadActiveMarkets();
+                loadResolvedMarkets();
+            } else if (tabName === 'my-bets' && contract) {
+                loadMyBets();
+            }
+        }
+
+        function addOutcome() {
+            const container = document.getElementById('outcomesContainer');
+            const outcomeDiv = document.createElement('div');
+            outcomeDiv.className = 'outcome-input';
+            outcomeDiv.innerHTML = `
+                <input type="text" placeholder="Outcome ${container.children.length + 1}" required>
+                <button type="button" class="btn btn-danger btn-small" onclick="removeOutcome(this)">Remove</button>
+            `;
+            container.appendChild(outcomeDiv);
+        }
+
+        function removeOutcome(button) {
+            const container = document.getElementById('outcomesContainer');
+            if (container.children.length > 2) {
+                button.parentElement.remove();
+            } else {
+                showError('You need at least 2 outcomes');
+            }
+        }
+
+        async function createMarket(event) {
+            event.preventDefault();
+            
+            if (!contract) {
+                showError('Please connect your wallet first');
+                return;
+            }
+
+            try {
+                const description = document.getElementById('description').value;
+                const resolutionTime = new Date(document.getElementById('resolutionTime').value).getTime() / 1000;
+                const arbitrator = document.getElementById('arbitrator').value;
+                const creationFee = document.getElementById('creationFee').value;
+
+                // Get outcomes
+                const outcomeInputs = document.querySelectorAll('#outcomesContainer input');
+                const outcomes = Array.from(outcomeInputs).map(input => input.value.trim()).filter(val => val);
+
+                if (outcomes.length < 2) {
+                    showError('Please provide at least 2 outcomes');
+                    return;
+                }
+
+                showSuccess('Creating market... Please confirm transaction in your wallet.');
+
+                const tx = await contract.createMarket(
+                    description,
+                    outcomes,
+                    resolutionTime,
+                    arbitrator,
+                    { value: ethers.utils.parseEther(creationFee) }
+                );
+
+                showSuccess('Transaction submitted. Waiting for confirmation...');
+                await tx.wait();
+
+                showSuccess('Market created successfully!');
+                
+                // Reset form
+                event.target.reset();
+                document.getElementById('outcomesContainer').innerHTML = `
+                    <div class="outcome-input">
+                        <input type="text" placeholder="Outcome 1 (e.g., Yes)" required>
+                        <button type="button" class="btn btn-danger btn-small" onclick="removeOutcome(this)">Remove</button>
+                    </div>
+                    <div class="outcome-input">
+                        <input type="text" placeholder="Outcome 2 (e.g., No)" required>
+                        <button type="button" class="btn btn-danger btn-small" onclick="removeOutcome(this)">Remove</button>
+                    </div>
+                `;
+
+                // Refresh markets
+                await loadActiveMarkets();
+
+            } catch (error) {
+                showError('Failed to create market: ' + error.message);
+            }
+        }
+
+        async function loadActiveMarkets() {
+            if (!contract) return;
+
+            try {
+                const marketIds = await contract.getAllActiveMarkets();
+                const marketsContainer = document.getElementById('activeMarkets');
+
+                if (marketIds.length === 0) {
+                    marketsContainer.innerHTML = `
+                        <div class="no-markets">
+                            <h3>No active markets</h3>
+                            <p>Be the first to create a prediction market!</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const marketsHTML = await Promise.all(
+                    marketIds.map(async (id) => {
+                        const market = await contract.getMarketInfo(id);
+                        const probabilities = await contract.getOutcomeProbabilities(id);
+                        return renderMarketCard(market, probabilities, 'active');
+                    })
+                );
+
+                marketsContainer.innerHTML = marketsHTML.join('');
+
+            } catch (error) {
+                document.getElementById('activeMarkets').innerHTML = `<div class="error">Error loading markets: ${error.message}</div>`;
+            }
+        }
+
+        async function loadResolvedMarkets() {
+            if (!contract) return;
+
+            try {
+                const marketIds = await contract.getAllResolvedMarkets();
+                const marketsContainer = document.getElementById('resolvedMarkets');
+
+                if (marketIds.length === 0) {
+                    marketsContainer.innerHTML = `
+                        <div class="no-markets">
+                            <h3>No resolved markets yet</h3>
+                            <p>Resolved markets will appear here</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const marketsHTML = await Promise.all(
+                    marketIds.map(async (id) => {
+                        const market = await contract.getMarketInfo(id);
+                        const probabilities = await contract.getOutcomeProbabilities(id);
+                        return renderMarketCard(market, probabilities, 'resolved');
+                    })
+                );
+
+                marketsContainer.innerHTML = marketsHTML.join('');
+
+            } catch (error) {
+                document.getElementById('resolvedMarkets').innerHTML = `<div class="error">Error loading markets: ${error.message}</div>`;
+            }
+        }
+
+        function renderMarketCard(market, probabilities, status) {
+            const resolutionDate = new Date(market.resolutionTime * 1000);
+            const createdDate = new Date(market.createdAt * 1000);
+            const totalBets = ethers.utils.formatEther(market.totalBets);
+
+            let statusClass = 'status-active';
+            let statusText = 'Active';
+            
+            if (status === 'resolved') {
+                statusClass = 'status-resolved';
+                statusText = `Resolved: ${market.outcomes[market.winningOutcome]}`;
+            } else if (Date.now() > resolutionDate.getTime()) {
+                statusClass = 'status-expired';
+                statusText = 'Expired';
+            }
+
+            const outcomesHTML = market.outcomes.map((outcome, index) => {
+                const probability = probabilities[index] / 100; // Convert from basis points
+                const betAmount = ethers.utils.formatEther(market.outcomeTotals[index]);
+                const isWinner = status === 'resolved' && index === market.winningOutcome;
+                
+                return `
+                    <div class="outcome-option ${isWinner ? 'selected' : ''}" 
+                         onclick="${status === 'active' ? `selectOutcome(${market.id}, ${index})` : ''}">
+                        <div class="outcome-name">${outcome} ${isWinner ? '🏆' : ''}</div>
+                        <div class="probability-bar">
+                            <div class="probability-fill" style="width: ${probability}%"></div>
+                        </div>
+                        <div class="outcome-stats">
+                            <span>${probability.toFixed(1)}%</span>
+                            <span>${betAmount} ETH</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            let actionHTML = '';
+            if (status === 'active' && Date.now() < resolutionDate.getTime()) {
+                actionHTML = `
+                    <div class="bet-form">
+                        <input type="number" id="betAmount${market.id}" step="0.001" min="0.001" placeholder="Bet amount (ETH)">
+                        <button class="btn btn-success" onclick="placeBet(${market.id})">Place Bet</button>
+                    </div>
+                `;
+            } else if (status === 'resolved') {
+                actionHTML = `
+                    <div class="bet-form">
+                        <button class="btn btn-success" onclick="withdrawWinnings(${market.id})">Withdraw Winnings</button>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="market-card">
+                    <div class="market-header">
+                        <div class="market-title">${market.description}</div>
+                        <div class="market-status ${statusClass}">${statusText}</div>
+                    </div>
+                    
+                    <div class="outcomes-grid">
+                        ${outcomesHTML}
+                    </div>
+                    
+                    ${actionHTML}
+                    
+                    <div class="market-info">
+                        <div class="info-item">
+                            <div class="info-label">Total Bets</div>
+                            <div class="info-value">${totalBets} ETH</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Resolution Date</div>
+                            <div class="info-value">${resolutionDate.toLocaleDateString()}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Created</div>
+                            <div class="info-value">${createdDate.toLocaleDateString()}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Creator</div>
+                            <div class="info-value">${market.creator.slice(0, 6)}...${market.creator.slice(-4)}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function selectOutcome(marketId, outcomeIndex) {
+            selectedMarketId = marketId;
+            selectedOutcome = outcomeIndex;
+            
+            // Visual feedback
+            document.querySelectorAll(`[onclick*="selectOutcome(${marketId}"]`).forEach(el => {
+                el.classList.remove('selected');
+            });
+            event.target.closest('.outcome-option').classList.add('selected');
+        }
+
+        async function placeBet(marketId) {
+            if (!contract) {
+                showError('Please connect your wallet first');
+                return;
+            }
+
+            if (selectedMarketId !== marketId || selectedOutcome === null) {
+                showError('Please select an outcome first');
+                return;
+            }
+
+            try {
+                const betAmount = document.getElementById(`betAmount${marketId}`).value;
+                if (!betAmount || parseFloat(betAmount) <= 0) {
+                    showError('Please enter a valid bet amount');
+                    return;
+                }
+
+                showSuccess('Placing bet... Please confirm transaction in your wallet.');
+
+                const tx = await contract.placeBet(
+                    marketId,
+                    selectedOutcome,
+                    { value: ethers.utils.parseEther(betAmount) }
+                );
+
+                showSuccess('Transaction submitted. Waiting for confirmation...');
+                await tx.wait();
+
+                showSuccess('Bet placed successfully!');
+                
+                // Reset selection and refresh markets
+                selectedMarketId = null;
+                selectedOutcome = null;
+                document.getElementById(`betAmount${marketId}`).value = '';
+                
+                await loadActiveMarkets();
+                await loadMyBets();
+
+            } catch (error) {
+                showError('Failed to place bet: ' + error.message);
+            }
+        }
+
+        async function withdrawWinnings(marketId) {
+            if (!contract) {
+                showError('Please connect your wallet first');
+                return;
+            }
+
+            try {
+                showSuccess('Withdrawing winnings... Please confirm transaction in your wallet.');
+
+                const tx = await contract.withdrawWinnings(marketId);
+
+                showSuccess('Transaction submitted. Waiting for confirmation...');
+                await tx.wait();
+
+                showSuccess('Winnings withdrawn successfully!');
+                
+                await loadResolvedMarkets();
+                await loadMyBets();
+
+            } catch (error) {
+                showError('Failed to withdraw winnings: ' + error.message);
+            }
+        }
+
+        async function loadMyBets() {
+            if (!contract || !userAddress) return;
+
+            try {
+                const bets = await contract.getUserBets(userAddress);
+                const betsContainer = document.getElementById('myBets');
+
+                if (bets.length === 0) {
+                    betsContainer.innerHTML = `
+                        <div class="no-markets">
+                            <h3>No bets yet</h3>
+                            <p>Your bets will appear here after you place them</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Group bets by market
+                const betsByMarket = {};
+                for (const bet of bets) {
+                    const marketId = bet.marketId.toString();
+                    if (!betsByMarket[marketId]) {
+                        betsByMarket[marketId] = [];
+                    }
+                    betsByMarket[marketId].push(bet);
+                }
+
+                const betsHTML = await Promise.all(
+                    Object.keys(betsByMarket).map(async (marketId) => {
+                        try {
+                            const market = await contract.getMarketInfo(marketId);
+                            const marketBets = betsByMarket[marketId];
+                            
+                            const betsListHTML = marketBets.map(bet => {
+                                const betDate = new Date(bet.timestamp * 1000);
+                                const betAmount = ethers.utils.formatEther(bet.amount);
+                                const outcome = market.outcomes[bet.outcome];
+                                
+                                return `
+                                    <div style="background: #f8f9fa; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+                                        <strong>${outcome}</strong> - ${betAmount} ETH
+                                        <div style="font-size: 0.8rem; color: #666; margin-top: 5px;">
+                                            ${betDate.toLocaleDateString()} ${betDate.toLocaleTimeString()}
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('');
+
+                            return `
+                                <div class="market-card">
+                                    <div class="market-title">${market.description}</div>
+                                    <div style="margin: 15px 0;">
+                                        <strong>Your Bets:</strong>
+                                        ${betsListHTML}
+                                    </div>
+                                    <div class="market-status ${market.resolved ? 'status-resolved' : 'status-active'}">
+                                        ${market.resolved ? `Resolved: ${market.outcomes[market.winningOutcome]}` : 'Active'}
+                                    </div>
+                                </div>
+                            `;
+                        } catch (error) {
+                            return `<div class="error">Error loading market ${marketId}: ${error.message}</div>`;
+                        }
+                    })
+                );
+
+                betsContainer.innerHTML = betsHTML.join('');
+
+            } catch (error) {
+                document.getElementById('myBets').innerHTML = `<div class="error">Error loading bets: ${error.message}</div>`;
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            document.getElementById('success-message').style.display = 'none';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('success-message');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            document.getElementById('error-message').style.display = 'none';
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
