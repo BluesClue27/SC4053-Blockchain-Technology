@@ -3,8 +3,8 @@ const hre = require("hardhat");
 async function main() {
     console.log("Deploying PredictionMarket contract...");
 
-    // Get the ContractFactory and Signers
-    const [deployer] = await hre.ethers.getSigners();
+    // Get all signers (deployer + arbitrators)
+    const [deployer, acc1, acc2, acc3] = await hre.ethers.getSigners();
     console.log("Deploying contracts with the account:", deployer.address);
     console.log("Account balance:", hre.ethers.formatEther(await hre.ethers.provider.getBalance(deployer.address)));
 
@@ -35,18 +35,23 @@ async function main() {
 
     // Create a sample market for testing
     console.log("\nCreating sample market...");
-    const resolutionTime = Math.floor(Date.now() / 1000) + (24 * 60 * 60); // 24 hours from now
+    const resolutionTime = Math.floor(Date.now() / 1000) + (60 * 60); // 1 hours from now
+
+    // Use accounts 1, 2, 3 as arbitrators (not the deployer)
+    const arbitrators = [acc1.address, acc2.address, acc3.address];
+
+    console.log("Using arbitrators:", arbitrators);
 
     const tx = await predictionMarket.createMarket(
-        "Will Bitcoin reach $100,000 by the end of 2024?",
+        "Will Bitcoin reach $100,000 by the end of 2025?",
         ["Yes", "No"],
         resolutionTime,
-        deployer.address, // Use deployer as arbitrator for testing
+        arbitrators, // Use multiple arbitrators
         { value: hre.ethers.parseEther("0.001") }
     );
 
     await tx.wait();
-    console.log("Sample market created!");
+    console.log("Sample market created with", arbitrators.length, "arbitrators!");
 
     // Get market info
     const marketInfo = await predictionMarket.getMarketInfo(1);
@@ -72,6 +77,21 @@ async function main() {
 
     fs.writeFileSync('deployment.json', JSON.stringify(deploymentInfo, null, 2));
     console.log("Deployment info saved to deployment.json");
+
+    // Update frontend with new contract address
+    const frontendPath = './frontend/js/app.js';
+    let frontendCode = fs.readFileSync(frontendPath, 'utf8');
+
+    // Replace the contract address using regex
+    const addressRegex = /const CONTRACT_ADDRESS = ['"]0x[a-fA-F0-9]{40}['"]/;
+    frontendCode = frontendCode.replace(
+        addressRegex,
+        `const CONTRACT_ADDRESS = '${contractAddress}'`
+    );
+
+    fs.writeFileSync(frontendPath, frontendCode);
+    console.log("✅ Frontend updated with new contract address!");
+    console.log("\n⚠️  IMPORTANT: Hard refresh your browser (Ctrl+Shift+R) to clear cache!");
 }
 
 main()
