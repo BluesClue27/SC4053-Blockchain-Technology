@@ -197,6 +197,20 @@ async function createMarket(event) {
         await loadActiveMarkets();
 
     } catch (error) {
+        console.error("=== CREATE MARKET ERROR ===");
+        console.error("Full error object:", error);
+        console.error("Error message:", error.message);
+        console.error("Error code:", error.code);
+        if (error.data) {
+            console.error("Error data:", error.data);
+        }
+        if (error.reason) {
+            console.error("Error reason:", error.reason);
+        }
+        if (error.transaction) {
+            console.error("Transaction:", error.transaction);
+        }
+        console.error("=== END ERROR ===");
         showError(error);
     }
 }

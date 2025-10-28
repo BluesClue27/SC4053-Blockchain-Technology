@@ -4,16 +4,36 @@ A decentralized prediction market platform built on Ethereum that allows users t
 
 ## 📋 Table of Contents
 
+- [Quick Start](#-quick-start-for-evaluators)
+- [First-Time Setup Guide](#-first-time-setup-guide)
 - [Features](#features)
 - [Project Structure](#project-structure)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
 - [Configuration](#configuration)
-- [Deployment](#deployment)
+- [Troubleshooting](#-troubleshooting)
 - [Usage](#usage)
 - [Smart Contract Functions](#smart-contract-functions)
 - [Frontend Features](#frontend-features)
 - [Security Features](#security-features)
+
+## 🏃 Quick Start for Evaluators
+
+**TL;DR** - Get the application running in 5 minutes:
+
+1. **Install prerequisites:** Node.js v16+ and MetaMask browser extension
+2. **Clone and install:**
+   ```bash
+   git clone https://github.com/your-username/SC4053-Blockchain-Technology.git
+   cd SC4053-Blockchain-Technology
+   npm install
+   ```
+3. **Configure MetaMask:** Add network with RPC `http://127.0.0.1:8545`, Chain ID `31337`
+4. **Import test accounts:** Import at least 4 accounts (1 main + 3 arbitrators) - See [TEST_ACCOUNTS.md](./TEST_ACCOUNTS.md) for all available accounts
+5. **Start blockchain (Terminal 1):** `npm run node`
+6. **Deploy contract (Terminal 2):** `npm run deploy:localhost`
+7. **Start frontend (Terminal 3):** `cd frontend && python -m http.server 8080`
+8. **Open browser:** Navigate to `http://localhost:8080`, switch MetaMask to "Localhost 8545", and connect wallet
+
+See [First-Time Setup Guide](#-first-time-setup-guide) below for detailed step-by-step instructions.
 
 ## ✨ Features
 
@@ -40,169 +60,263 @@ prediction-market-dapp/
 ├── scripts/
 │   └── deploy.js                  # Deployment script
 ├── frontend/
-│   └── index.html                 # Simple web interface
+│   ├── index.html                 # Main web interface
+│   └── js/
+│       └── app.js                 # Frontend JavaScript logic
 ├── hardhat.config.js              # Hardhat configuration
 ├── package.json                   # Dependencies and scripts
-├── .env.example                   # Environment variables template
+├── TEST_ACCOUNTS.md               # Test account addresses and private keys
 └── README.md                      # This file
 ```
 
-## 🔧 Prerequisites
+## 🚀 First-Time Setup Guide
 
-- Node.js (v16 or later)
-- npm or yarn
-- MetaMask browser extension
-- Access to an Ethereum testnet (Goerli, Sepolia, etc.)
+### Step 1: Prerequisites Installation
 
-## 📦 Installation
+Before running this project, ensure you have the following installed:
+
+1. **Node.js (v16 or later)**
+   - Download from [nodejs.org](https://nodejs.org/)
+   - Verify installation: `node --version`
+
+2. **MetaMask Browser Extension**
+   - Install from [metamask.io](https://metamask.io/)
+   - Available for Chrome, Firefox, Brave, and Edge
+
+3. **Python (for frontend server)**
+   - Usually comes with Node.js
+   - Verify installation: `python --version` or `python3 --version`
+   - Alternative: Use Node.js http-server (`npm install -g http-server`)
+
+### Step 2: Project Installation
 
 1. **Clone the repository**
-
    ```bash
-   git clone <your-repo-url>
-   cd prediction-market-dapp
+   git clone https://github.com/your-username/SC4053-Blockchain-Technology.git
+   cd SC4053-Blockchain-Technology
    ```
 
 2. **Install dependencies**
-
    ```bash
    npm install
    ```
+   This will install Hardhat, OpenZeppelin contracts, and all required packages.
 
-3. **Create environment file**
+### Step 3: MetaMask Configuration
 
-   ```bash
-   cp .env.example .env
-   ```
+Configure MetaMask to connect to the local Hardhat network:
 
-4. **Configure environment variables**
-   Edit `.env` file with your values:
-   ```env
-   INFURA_API_KEY=your_infura_project_id
-   PRIVATE_KEY=your_wallet_private_key
-   ETHERSCAN_API_KEY=your_etherscan_api_key
-   ```
+1. Open MetaMask extension
+2. Click the network dropdown at the top
+3. Select "Add Network" or "Add a network manually"
+4. Enter the following details:
+   - **Network Name:** `Localhost 8545`
+   - **RPC URL:** `http://127.0.0.1:8545`
+   - **Chain ID:** `31337`
+   - **Currency Symbol:** `ETH`
+5. Click "Save"
+
+### Step 4: Import Test Accounts
+
+Hardhat provides pre-funded test accounts (each with 10,000 ETH). You need to import multiple accounts for testing.
+
+**IMPORTANT:** You need at least **4 accounts** total:
+- 1 account for creating markets and placing bets
+- 3 accounts to act as arbitrators (minimum required)
+
+**Quick Import - First Account:**
+
+1. In MetaMask, click the account avatar (top right)
+2. Select "Import Account"
+3. Select "Private Key" as import method
+4. **Paste this private key:** `0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80`
+5. Click "Import"
+
+This gives you **Account #0** (`0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266`) with 10,000 ETH.
+
+**Import Additional Accounts:**
+
+For a complete list of all 10 available test accounts with their addresses and private keys, see **[TEST_ACCOUNTS.md](./TEST_ACCOUNTS.md)**.
+
+That document includes:
+- All 10 test account addresses and private keys
+- Recommended testing scenarios
+- Step-by-step workflow examples
+- Instructions for using accounts as arbitrators or bidders
+
+**Minimum Requirement:** Import at least 3 more accounts (for arbitrators). You can import more if you want to test with multiple bidders.
+
+### Step 5: Start the Local Environment
+
+You need to open **THREE separate terminal windows**:
+
+**Terminal 1 - Start Local Blockchain:**
+```bash
+npm run node
+```
+This starts a local Ethereum blockchain at `http://127.0.0.1:8545`. Keep this terminal running.
+
+**Terminal 2 - Deploy Smart Contract:**
+```bash
+npm run deploy:localhost
+```
+This deploys the PredictionMarket contract to your local blockchain.
+
+**IMPORTANT:** Copy the contract address from the output. It will look like:
+```
+PredictionMarket deployed to: 0x5FbDB2315678afecb367f032d93F642f64180aa3
+```
+
+**Terminal 3 - Start Frontend Server:**
+```bash
+cd frontend
+python -m http.server 8080
+```
+Or if using Python 3 specifically:
+```bash
+cd frontend
+python3 -m http.server 8080
+```
+
+Alternative using Node.js (if Python is not available):
+```bash
+npx http-server frontend -p 8080
+```
+
+### Step 6: Access the Application
+
+1. Open your web browser
+2. Navigate to `http://localhost:8080`
+3. MetaMask should prompt you to connect
+4. **Switch MetaMask network to "Localhost 8545"** (important!)
+5. Click "Connect Wallet" button in the application
+6. Approve the connection in MetaMask
+
+You should now see:
+- Your wallet address displayed
+- Your balance (~10,000 ETH)
+- Ability to create markets and place bets
+
+### Step 7: Test the Application
+
+#### Create Your First Market
+
+1. Click on the "Create Market" tab
+2. Fill in the form:
+   - **Description:** "Will it rain tomorrow?"
+   - **Outcomes:** Add two outcomes (e.g., "Yes", "No")
+   - **Resolution Time:** Select a date/time at least 1 hour in the future
+   - **Arbitrator Addresses:** Add at least 3 arbitrator addresses from the accounts you imported
+     - Example: Use addresses from Accounts #1, #2, #3 (see [TEST_ACCOUNTS.md](./TEST_ACCOUNTS.md))
+     - You can use any 3+ addresses from your imported accounts
+   - **Creation Fee:** `0.001` ETH (minimum)
+3. Click "Create Market"
+4. Confirm the transaction in MetaMask
+
+**Note:** See [TEST_ACCOUNTS.md](./TEST_ACCOUNTS.md) for recommended testing scenarios with specific account assignments.
+
+#### Place a Bet
+
+1. Go to "Browse Markets" tab
+2. You should see your newly created market
+3. Click on an outcome
+4. Enter bet amount (e.g., `0.1` ETH)
+5. Click "Place Bet"
+6. Confirm transaction in MetaMask
+
+### Stopping the Application
+
+When you're done testing:
+
+1. Press `Ctrl+C` in each of the three terminal windows
+2. Close the browser tab
+3. MetaMask will automatically disconnect
+
+### Restarting After Shutdown
+
+**IMPORTANT:** When you restart the local blockchain (`npm run node`), it creates a fresh blockchain state. You must:
+
+1. Start the blockchain again (`npm run node`)
+2. Deploy the contract again (`npm run deploy:localhost`)
+3. Get the new contract address (it may be the same or different)
+4. **Reset MetaMask account:**
+   - Open MetaMask → Settings → Advanced
+   - Click "Clear activity tab data" or "Reset Account"
+   - This clears the transaction history for the new blockchain instance
 
 ## ⚙️ Configuration
 
 ### Network Configuration
 
-The project is configured to work with multiple networks:
+The project supports multiple networks (configured in `hardhat.config.js`):
 
-- **Local Development**: Hardhat local network
-- **Goerli Testnet**: Ethereum test network
+- **Local Development**: Hardhat network (Chain ID: 31337)
+- **Localhost**: Local Hardhat node at `http://127.0.0.1:8545`
+- **Goerli Testnet**: Ethereum test network (deprecated)
 - **Sepolia Testnet**: Ethereum test network
+- **Mumbai**: Polygon testnet
+- **BSC Testnet**: Binance Smart Chain testnet
 
-### Smart Contract Configuration
+### Smart Contract Parameters
 
-Key parameters in the smart contract:
+Key parameters in the PredictionMarket contract:
 
-- **Platform Fee**: 2.5% (250 basis points)
-- **Minimum Resolution Time**: 1 hour from market creation
-- **Maximum Outcomes**: 10 per market
-- **Minimum Creation Fee**: 0.001 ETH
+- **Platform Fee:** 2.5% (250 basis points)
+- **Minimum Resolution Time:** 1 hour from market creation
+- **Maximum Outcomes:** 10 per market
+- **Minimum Creation Fee:** 0.001 ETH
+- **Fee Recipient:** Contract deployer (can be changed)
 
-## 🚀 Local Development Setup
+### Environment Variables (Optional)
 
-### Quick Start Guide for Team Members
+For deploying to public testnets (not required for local development):
 
-#### Prerequisites Setup
-
-1. **Install Node.js** (v16 or later) from [nodejs.org](https://nodejs.org/)
-2. **Install MetaMask** browser extension from [metamask.io](https://metamask.io/)
-3. **Install Python** (for frontend server) - usually comes with Node.js
-
-#### Initial Setup (One-time)
-
-1. **Clone and install dependencies**
-
-   ```bash
-   git clone <your-repo-url>
-   cd prediction-market-dapp
-   npm install
-   ```
-
-2. **Configure MetaMask for local development**
-
-   - Open MetaMask → Networks → Add Network
-   - **Network Name:** `Localhost 8545`
-   - **RPC URL:** `http://127.0.0.1:8545`
-   - **Chain ID:** `31337`
-   - **Currency Symbol:** `ETH`
-   - Save the network
-
-3. **Import test account to MetaMask**
-   - Click MetaMask account avatar → Import Account
-   - **Private Key:** `0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80`
-   - This gives you 10,000 ETH for testing
-
-#### Starting the Development Environment
-
-**Terminal 1: Start Blockchain**
-
-```bash
-npm run node
+Create a `.env` file in the project root:
+```env
+INFURA_API_KEY=your_infura_project_id
+PRIVATE_KEY=your_wallet_private_key
+ETHERSCAN_API_KEY=your_etherscan_api_key
+POLYGONSCAN_API_KEY=your_polygonscan_api_key
+BSCSCAN_API_KEY=your_bscscan_api_key
 ```
 
-_Keep this running - shows blockchain activity_
+## 🔧 Troubleshooting
 
-**Terminal 2: Deploy Smart Contract**
+### Common Issues
 
-```bash
-npm run deploy:localhost
-```
+1. **"MetaMask not detected"**
+   - Make sure you're accessing via `http://localhost:8080`, not by opening the HTML file directly
+   - Ensure MetaMask extension is installed and enabled
 
-_Copy the contract address from output_
+2. **"Wrong network" error**
+   - Check that MetaMask is connected to "Localhost 8545" network
+   - Verify the Chain ID is 31337
 
-**Terminal 3: Start Frontend Server**
+3. **"Nonce too high" or transaction errors**
+   - Reset MetaMask account: Settings → Advanced → Reset Account
+   - This happens when you restart the local blockchain
 
-```bash
-cd frontend
-python -m http.server 8080
-```
+4. **"Contract not deployed" or undefined address**
+   - Make sure you ran `npm run deploy:localhost` in Terminal 2
+   - Verify the contract address is correct in `frontend/js/app.js`
 
-**Browser: Open Application**
+5. **"Insufficient funds" error**
+   - Ensure you imported the test account with 10,000 ETH
+   - Check you're connected to the correct account in MetaMask
 
-1. Go to `http://localhost:8080`
-2. Switch MetaMask to "Localhost 8545" network
-3. Click "Connect Wallet"
-4. You should see your balance (~10,000 ETH)
+6. **Python server won't start**
+   - Try `python3 -m http.server 8080` instead
+   - Or use Node.js: `npx http-server frontend -p 8080`
 
-#### Stopping Everything
+7. **"Port 8545 already in use"**
+   - Another process is using that port
+   - Kill the process or restart your computer
+   - On Windows: `netstat -ano | findstr :8545` then `taskkill /PID <process_id> /F`
 
-1. Press `Ctrl+C` in all three terminals
-2. MetaMask will automatically disconnect
-
-#### Troubleshooting
-
-- **"MetaMask not detected"**: Ensure you're using `http://localhost:8080`, not opening HTML file directly
-- **"Wrong network"**: Switch MetaMask to "Localhost 8545"
-- **"No test ETH"**: Import the test account with the private key above
-- **Contract errors**: Make sure you deployed with `npm run deploy:localhost`
-
-#### Test Account Details
-
-- **Address:** `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266`
-- **Private Key:** `0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80`
-- **Balance:** 10,000 ETH
-- **Use for:** Creating markets (use different account as arbitrator)
-
-#### For Creating Markets
-
-- **Arbitrator Address:** Use `0x70997970C51812dc3A010C7d01b50e0d17dc79C8` (Account #1)
-- **Creation Fee:** Minimum 0.001 ETH
-- **Resolution Time:** Must be at least 1 hour in the future
-
-### Post-Deployment Steps
-
-1. **Update frontend contract address**
-
-   - Copy the deployed contract address from deployment output
-   - Update `CONTRACT_ADDRESS` in `frontend/index.html`
-
-2. **Add contract ABI to frontend**
-   - Copy the ABI from `artifacts/contracts/PredictionMarket.sol/PredictionMarket.json`
-   - Update `CONTRACT_ABI` in `frontend/index.html`
+8. **Contract address keeps changing**
+   - This is normal when restarting the local blockchain
+   - The contract address is deterministic based on deployment order
+   - Usually stays the same if you deploy in the same sequence
 
 ## 📱 Usage
 
