@@ -10,13 +10,10 @@ A decentralized prediction market platform built on Ethereum that allows users t
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [Deployment](#deployment)
-- [Testing](#testing)
 - [Usage](#usage)
 - [Smart Contract Functions](#smart-contract-functions)
 - [Frontend Features](#frontend-features)
 - [Security Features](#security-features)
-- [Bonus Features Implemented](#bonus-features-implemented)
-- [Course Requirements Fulfilled](#course-requirements-fulfilled)
 
 ## ✨ Features
 
