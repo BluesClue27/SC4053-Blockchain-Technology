@@ -20,19 +20,19 @@ A decentralized prediction market platform built on Ethereum that allows users t
 
 ## ✨ Features
 
-### Core Features (Required)
+### Core Features
+
 - **Market Creation**: Users can create new prediction markets with custom descriptions, outcomes, and resolution times
 - **Betting System**: Users can place bets on different outcomes using ETH
 - **Market Resolution**: Designated arbitrators can resolve markets and determine winning outcomes
 - **Winnings Distribution**: Winners can withdraw their proportional share of the total bet pool
 - **Market Discovery**: Browse active and resolved markets with real-time probability calculations
 
-### Bonus Features
+<!-- ### Bonus Features
 - **Dynamic Pricing**: Market prices reflect the wisdom of the crowd through betting volumes
 - **Platform Fees**: Configurable platform fees for market resolution (default 2.5%)
-- **Comprehensive Testing**: Full test suite covering all contract functionality
 - **Reentrancy Protection**: Security measures against common smart contract attacks
-- **Event Logging**: Comprehensive event emission for frontend integration
+- **Event Logging**: Comprehensive event emission for frontend integration -->
 
 ## 🏗 Project Structure
 
@@ -42,8 +42,6 @@ prediction-market-dapp/
 │   └── PredictionMarket.sol       # Main smart contract
 ├── scripts/
 │   └── deploy.js                  # Deployment script
-├── test/
-│   └── PredictionMarket.test.js   # Comprehensive test suite
 ├── frontend/
 │   └── index.html                 # Simple web interface
 ├── hardhat.config.js              # Hardhat configuration
@@ -62,17 +60,20 @@ prediction-market-dapp/
 ## 📦 Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone <your-repo-url>
    cd prediction-market-dapp
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Create environment file**
+
    ```bash
    cp .env.example .env
    ```
@@ -94,12 +95,11 @@ The project is configured to work with multiple networks:
 - **Local Development**: Hardhat local network
 - **Goerli Testnet**: Ethereum test network
 - **Sepolia Testnet**: Ethereum test network
-- **Mumbai**: Polygon test network
-- **BSC Testnet**: Binance Smart Chain test network
 
 ### Smart Contract Configuration
 
 Key parameters in the smart contract:
+
 - **Platform Fee**: 2.5% (250 basis points)
 - **Minimum Resolution Time**: 1 hour from market creation
 - **Maximum Outcomes**: 10 per market
@@ -110,12 +110,15 @@ Key parameters in the smart contract:
 ### Quick Start Guide for Team Members
 
 #### Prerequisites Setup
+
 1. **Install Node.js** (v16 or later) from [nodejs.org](https://nodejs.org/)
 2. **Install MetaMask** browser extension from [metamask.io](https://metamask.io/)
 3. **Install Python** (for frontend server) - usually comes with Node.js
 
 #### Initial Setup (One-time)
+
 1. **Clone and install dependencies**
+
    ```bash
    git clone <your-repo-url>
    cd prediction-market-dapp
@@ -123,6 +126,7 @@ Key parameters in the smart contract:
    ```
 
 2. **Configure MetaMask for local development**
+
    - Open MetaMask → Networks → Add Network
    - **Network Name:** `Localhost 8545`
    - **RPC URL:** `http://127.0.0.1:8545`
@@ -138,101 +142,70 @@ Key parameters in the smart contract:
 #### Starting the Development Environment
 
 **Terminal 1: Start Blockchain**
+
 ```bash
 npm run node
 ```
-*Keep this running - shows blockchain activity*
+
+_Keep this running - shows blockchain activity_
 
 **Terminal 2: Deploy Smart Contract**
+
 ```bash
 npm run deploy:localhost
 ```
-*Copy the contract address from output*
+
+_Copy the contract address from output_
 
 **Terminal 3: Start Frontend Server**
+
 ```bash
 cd frontend
 python -m http.server 8080
 ```
 
 **Browser: Open Application**
+
 1. Go to `http://localhost:8080`
 2. Switch MetaMask to "Localhost 8545" network
 3. Click "Connect Wallet"
 4. You should see your balance (~10,000 ETH)
 
 #### Stopping Everything
+
 1. Press `Ctrl+C` in all three terminals
 2. MetaMask will automatically disconnect
 
 #### Troubleshooting
+
 - **"MetaMask not detected"**: Ensure you're using `http://localhost:8080`, not opening HTML file directly
 - **"Wrong network"**: Switch MetaMask to "Localhost 8545"
 - **"No test ETH"**: Import the test account with the private key above
 - **Contract errors**: Make sure you deployed with `npm run deploy:localhost`
 
 #### Test Account Details
+
 - **Address:** `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266`
 - **Private Key:** `0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80`
 - **Balance:** 10,000 ETH
 - **Use for:** Creating markets (use different account as arbitrator)
 
 #### For Creating Markets
+
 - **Arbitrator Address:** Use `0x70997970C51812dc3A010C7d01b50e0d17dc79C8` (Account #1)
 - **Creation Fee:** Minimum 0.001 ETH
 - **Resolution Time:** Must be at least 1 hour in the future
 
-### Testnet Deployment
-
-1. **Deploy to Goerli**
-   ```bash
-   npm run deploy:goerli
-   ```
-
-2. **Deploy to Sepolia**
-   ```bash
-   npm run deploy:sepolia
-   ```
-
-3. **Verify contract (optional)**
-   ```bash
-   npm run verify:goerli <CONTRACT_ADDRESS>
-   ```
-
 ### Post-Deployment Steps
 
 1. **Update frontend contract address**
+
    - Copy the deployed contract address from deployment output
    - Update `CONTRACT_ADDRESS` in `frontend/index.html`
 
 2. **Add contract ABI to frontend**
    - Copy the ABI from `artifacts/contracts/PredictionMarket.sol/PredictionMarket.json`
    - Update `CONTRACT_ABI` in `frontend/index.html`
-
-## 🧪 Testing
-
-Run the comprehensive test suite:
-
-```bash
-# Run all tests
-npm test
-
-# Run tests with gas reporting
-REPORT_GAS=true npm test
-
-# Run coverage analysis
-npm run coverage
-```
-
-### Test Coverage
-
-The test suite covers:
-- Market creation with various scenarios
-- Betting functionality and edge cases
-- Market resolution by arbitrators
-- Winnings calculation and withdrawal
-- Security measures and access controls
-- View functions and market queries
 
 ## 📱 Usage
 
@@ -273,39 +246,42 @@ The test suite covers:
 
 ### Public Functions
 
-| Function | Description | Access |
-|----------|-------------|--------|
-| `createMarket()` | Create a new prediction market | Anyone (with fee) |
-| `placeBet()` | Place a bet on market outcome | Anyone |
-| `resolveMarket()` | Resolve market with winning outcome | Arbitrator only |
-| `withdrawWinnings()` | Withdraw winnings after resolution | Winners only |
-| `getMarketInfo()` | Get complete market information | Anyone |
-| `getOutcomeProbabilities()` | Get current market probabilities | Anyone |
+| Function                    | Description                         | Access            |
+| --------------------------- | ----------------------------------- | ----------------- |
+| `createMarket()`            | Create a new prediction market      | Anyone (with fee) |
+| `placeBet()`                | Place a bet on market outcome       | Anyone            |
+| `resolveMarket()`           | Resolve market with winning outcome | Arbitrator only   |
+| `withdrawWinnings()`        | Withdraw winnings after resolution  | Winners only      |
+| `getMarketInfo()`           | Get complete market information     | Anyone            |
+| `getOutcomeProbabilities()` | Get current market probabilities    | Anyone            |
 
 ### View Functions
 
-| Function | Description |
-|----------|-------------|
-| `getAllActiveMarkets()` | Get IDs of all active markets |
-| `getAllResolvedMarkets()` | Get IDs of all resolved markets |
-| `getUserBets()` | Get all bets placed by a user |
-| `getUserBetAmount()` | Get user's bet amount for specific outcome |
+| Function                  | Description                                |
+| ------------------------- | ------------------------------------------ |
+| `getAllActiveMarkets()`   | Get IDs of all active markets              |
+| `getAllResolvedMarkets()` | Get IDs of all resolved markets            |
+| `getUserBets()`           | Get all bets placed by a user              |
+| `getUserBetAmount()`      | Get user's bet amount for specific outcome |
 
 ## 🖥 Frontend Features
 
 ### Modern UI/UX
+
 - **Responsive Design**: Works on desktop and mobile devices
 - **Dark Theme**: Modern gradient design with glassmorphism effects
 - **Real-time Updates**: Live probability calculations and bet tracking
 - **Wallet Integration**: Seamless MetaMask connection
 
 ### Market Display
+
 - **Market Cards**: Clean, organized display of market information
 - **Probability Bars**: Visual representation of outcome probabilities
 - **Status Indicators**: Clear indication of market status (active/resolved/expired)
 - **Time Display**: Human-readable creation and resolution times
 
 ### User Experience
+
 - **Tabbed Interface**: Easy navigation between browse, create, and personal bets
 - **Form Validation**: Client-side validation for all inputs
 - **Error Handling**: Clear error messages and success notifications
@@ -314,93 +290,17 @@ The test suite covers:
 ## 🔐 Security Features
 
 ### Smart Contract Security
+
 - **ReentrancyGuard**: Protection against reentrancy attacks
 - **Access Control**: Role-based permissions using OpenZeppelin
 - **Input Validation**: Comprehensive validation of all parameters
 - **Safe Math**: Using Solidity 0.8+ built-in overflow protection
 
 ### Frontend Security
+
 - **Input Sanitization**: All user inputs are validated
 - **Wallet Integration**: Secure interaction with MetaMask
 - **Error Boundaries**: Graceful handling of blockchain errors
-
-## 🎯 Bonus Features Implemented
-
-### 1. **Multi-Token Support Foundation**
-- Contract designed to support different bet tokens
-- Extensible architecture for future ERC20 integration
-
-### 2. **Advanced Market Analytics**
-- Real-time probability calculations
-- Historical bet tracking per user
-- Market performance metrics
-
-### 3. **Enhanced User Experience**
-- Comprehensive market filtering and sorting
-- User bet history with detailed analytics
-- Market creation wizard with validation
-
-### 4. **Platform Economics**
-- Configurable platform fees
-- Fee distribution to platform treasury
-- Emergency withdrawal capabilities for contract owner
-
-## ✅ Course Requirements Fulfilled
-
-### **Problem Identification & Solution Design**
-- **Problem**: Centralized prediction markets lack transparency and user control
-- **Solution**: Decentralized platform giving users full control of their assets
-- **Implementation**: Smart contract-based system with no central authority over funds
-
-### **Blockchain Solution Development**
-- **Smart Contracts**: Comprehensive Solidity implementation using OpenZeppelin standards
-- **Testing**: 20+ test cases covering all functionality and edge cases
-- **Deployment**: Multi-network deployment scripts with verification
-
-### **Code Quality & Documentation**
-- **Clean Architecture**: Well-organized, modular smart contract design
-- **Comprehensive Comments**: Detailed documentation in code
-- **Professional Standards**: Following Solidity best practices and security patterns
-
-### **User Experience**
-- **Frontend Integration**: Complete web interface for all contract functions
-- **Wallet Integration**: Seamless MetaMask connection and transaction handling
-- **Responsive Design**: Professional UI suitable for real-world use
-
-## 🎓 Learning Outcomes Demonstrated
-
-### **LO 1: Problem Analysis**
-- Identified issues with centralized prediction markets
-- Designed decentralized solution addressing trust and control issues
-
-### **LO 3: Blockchain Implementation**
-- Implemented comprehensive smart contract system
-- Applied course concepts: tokenomics, incentive mechanisms, decentralization
-
-### **LO 4: Development Skills**
-- Professional-grade smart contract development
-- Complete testing and deployment pipeline
-- User-friendly frontend application
-
-## 📊 Assessment Criteria Alignment
-
-### **Design & Problem Solving (High Standard)**
-- ✅ Correct problem identification aligned with course materials
-- ✅ Technically accurate blockchain solution
-- ✅ Clear connection to fundamental blockchain principles
-- ✅ Complete and practical solution design
-
-### **Development & Implementation (High Standard)**
-- ✅ Logical development connecting to core problem
-- ✅ Demonstrated programming expertise
-- ✅ Critical thinking and evaluation evident
-- ✅ Security, efficiency, and scalability considerations
-
-### **Code Quality & Documentation (High Standard)**
-- ✅ Clear logical flow and professional formatting
-- ✅ Comprehensive comments and documentation
-- ✅ Professional-grade blockchain application
-- ✅ Excellent user experience
 
 ## 🚧 Future Enhancements
 
@@ -418,13 +318,6 @@ This project is developed for academic purposes as part of the SC4053/CE4153/CZ4
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## 🙋‍♂️ Support
-
-For questions or issues related to this project, please refer to:
-- Course materials and lectures
-- NTULearn discussion board
-- Course instructors and TAs
-
 ## 📚 References
 
 - [Ethereum Documentation](https://ethereum.org/developers/)
@@ -435,5 +328,3 @@ For questions or issues related to this project, please refer to:
 - [Course GitHub Repository](https://github.com/BlockchainCourseNTU/resource/)
 
 ---
-
-*Built with ❤️ for the NTU Blockchain Technology course*
