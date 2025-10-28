@@ -90,23 +90,99 @@ Private Key: 0xdbda1821b80551c9d65939329250298aa3472ba22feea921c0cf5d620ea67b97
 Balance: 10,000 ETH
 ```
 
+### Account #10
+```
+Address: 0xBcd4042DE499D14e55001CcbB24a551F3b954096
+Private Key: 0xf214f2b2cd398c806f84e317254e0f0b801d0643303237d97a22a48e01628897
+Balance: 10,000 ETH
+```
+
+### Account #11
+```
+Address: 0x71bE63f3384f5fb98995898A86B02Fb2426c5788
+Private Key: 0x701b615bbdfb9de65240bc28bd21bbc0d996645a3dd57e7b12bc2bdf6f192c82
+Balance: 10,000 ETH
+```
+
+### Account #12
+```
+Address: 0xFABB0ac9d68B0B445fB7357272Ff202C5651694a
+Private Key: 0xa267530f49f8280200edf313ee7af6b827f2a8bce2897751d06a843f644967b1
+Balance: 10,000 ETH
+```
+
+### Account #13
+```
+Address: 0x1CBd3b2770909D4e10f157cABC84C7264073C9Ec
+Private Key: 0x47c99abed3324a2707c28affff1267e45918ec8c3f20b8aa892e8b065d2942dd
+Balance: 10,000 ETH
+```
+
+### Account #14
+```
+Address: 0xdF3e18d64BC6A983f673Ab319CCaE4f1a57C7097
+Private Key: 0xc526ee95bf44d8fc405a158bb884d9d1238d99f0612e9f33d006bb0789009aaa
+Balance: 10,000 ETH
+```
+
+### Account #15
+```
+Address: 0xcd3B766CCDd6AE721141F452C550Ca635964ce71
+Private Key: 0x8166f546bab6da521a8369cab06c5d2b9e46670292d85c875ee9ec20e84ffb61
+Balance: 10,000 ETH
+```
+
+### Account #16
+```
+Address: 0x2546BcD3c84621e976D8185a91A922aE77ECEc30
+Private Key: 0xea6c44ac03bff858b476bba40716402b03e41b8e97e276d1baec7c37d42484a0
+Balance: 10,000 ETH
+```
+
+### Account #17
+```
+Address: 0xbDA5747bFD65F08deb54cb465eB87D40e51B197E
+Private Key: 0x689af8efa8c651a91ad287602527f3af2fe9f6501a7ac4b061667b5a93e037fd
+Balance: 10,000 ETH
+```
+
+### Account #18
+```
+Address: 0xdD2FD4581271e230360230F9337D5c0430Bf44C0
+Private Key: 0xde9be858da4a475276426320d5e9262ecfc3ba460bfac56360bfa6c4c28b4ee0
+Balance: 10,000 ETH
+```
+
+### Account #19
+```
+Address: 0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199
+Private Key: 0xdf57089febbacf7ba0bc227dafbffa9fc08a93fdc68e1e42411a14efcf23656e
+Balance: 10,000 ETH
+```
+
 ## Recommended Testing Setup
 
 ### Scenario 1: Basic Testing
 - **Market Creator:** Account #0
 - **Arbitrators (3 required):** Accounts #1, #2, #3
-- **Bidders:** Accounts #4, #5, #6
+- **Bidders:** Accounts #4, #5, #6, #7, #8, #9
 
 ### Scenario 2: Multiple Markets
 - **Market Creator 1:** Account #0
 - **Market Creator 2:** Account #1
-- **Arbitrators (3 required):** Accounts #7, #8, #9
-- **Bidders:** Accounts #2, #3, #4, #5, #6
+- **Arbitrators (3 required):** Accounts #10, #11, #12
+- **Bidders:** Accounts #2, #3, #4, #5, #6, #7, #8, #9
 
-### Scenario 3: Complex Testing
-- **Market Creators:** Accounts #0, #1, #2
-- **Arbitrators (3 required):** Accounts #3, #4, #5
-- **Bidders:** Accounts #6, #7, #8, #9
+### Scenario 3: Complex Testing (Multiple Markets & Arbitrators)
+- **Market Creators:** Accounts #0, #1, #2, #3
+- **Arbitrator Set 1:** Accounts #10, #11, #12
+- **Arbitrator Set 2:** Accounts #13, #14, #15
+- **Bidders:** Accounts #4, #5, #6, #7, #8, #9, #16, #17, #18, #19
+
+### Scenario 4: Large-Scale Testing
+- **Market Creators:** Accounts #0, #1, #2, #3, #4
+- **Arbitrators (3 required per market):** Accounts #10-#19 (can assign different sets)
+- **Bidders:** Any combination of accounts #5-#19
 
 ## Testing Workflow Example
 

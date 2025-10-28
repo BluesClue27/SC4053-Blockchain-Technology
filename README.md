@@ -4,7 +4,7 @@ A decentralized prediction market platform built on Ethereum that allows users t
 
 ## 📋 Table of Contents
 
-- [Quick Start](#-quick-start-for-evaluators)
+- [Quick Start](#-quick-start)
 - [First-Time Setup Guide](#-first-time-setup-guide)
 - [Features](#features)
 - [Project Structure](#project-structure)
@@ -15,9 +15,7 @@ A decentralized prediction market platform built on Ethereum that allows users t
 - [Frontend Features](#frontend-features)
 - [Security Features](#security-features)
 
-## 🏃 Quick Start for Evaluators
-
-**TL;DR** - Get the application running in 5 minutes:
+## 🏃 Quick Start
 
 1. **Install prerequisites:** Node.js v16+ and MetaMask browser extension
 2. **Clone and install:**
@@ -27,7 +25,7 @@ A decentralized prediction market platform built on Ethereum that allows users t
    npm install
    ```
 3. **Configure MetaMask:** Add network with RPC `http://127.0.0.1:8545`, Chain ID `31337`
-4. **Import test accounts:** Import at least 4 accounts (1 main + 3 arbitrators) - See [TEST_ACCOUNTS.md](./TEST_ACCOUNTS.md) for all available accounts
+4. **Import test accounts:** Import at least 4 accounts (1 main + 3 arbitrators) - See [TEST_ACCOUNTS.md](./TEST_ACCOUNTS.md) for all 20 available accounts
 5. **Start blockchain (Terminal 1):** `npm run node`
 6. **Deploy contract (Terminal 2):** `npm run deploy:localhost`
 7. **Start frontend (Terminal 3):** `cd frontend && python -m http.server 8080`
@@ -61,11 +59,16 @@ prediction-market-dapp/
 │   └── deploy.js                  # Deployment script
 ├── frontend/
 │   ├── index.html                 # Main web interface
+│   ├── css/
+│   │   └── styles.css             # Application styles
 │   └── js/
 │       └── app.js                 # Frontend JavaScript logic
+├── artifacts/                      # Compiled contract artifacts
+├── cache/                          # Hardhat cache
 ├── hardhat.config.js              # Hardhat configuration
 ├── package.json                   # Dependencies and scripts
-├── TEST_ACCOUNTS.md               # Test account addresses and private keys
+├── deployment.json                # Deployed contract addresses
+├── TEST_ACCOUNTS.md               # Test account addresses and private keys (20 accounts)
 └── README.md                      # This file
 ```
 
@@ -118,7 +121,7 @@ Configure MetaMask to connect to the local Hardhat network:
 
 ### Step 4: Import Test Accounts
 
-Hardhat provides pre-funded test accounts (each with 10,000 ETH). You need to import multiple accounts for testing.
+Hardhat provides 20 pre-funded test accounts (each with 10,000 ETH). You need to import multiple accounts for testing.
 
 **IMPORTANT:** You need at least **4 accounts** total:
 - 1 account for creating markets and placing bets
@@ -136,15 +139,15 @@ This gives you **Account #0** (`0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266`) wit
 
 **Import Additional Accounts:**
 
-For a complete list of all 10 available test accounts with their addresses and private keys, see **[TEST_ACCOUNTS.md](./TEST_ACCOUNTS.md)**.
+For a complete list of all 20 available test accounts with their addresses and private keys, see **[TEST_ACCOUNTS.md](./TEST_ACCOUNTS.md)**.
 
 That document includes:
-- All 10 test account addresses and private keys
-- Recommended testing scenarios
+- All 20 test account addresses and private keys
+- 4 recommended testing scenarios (basic, multiple markets, complex, and large-scale)
 - Step-by-step workflow examples
 - Instructions for using accounts as arbitrators or bidders
 
-**Minimum Requirement:** Import at least 3 more accounts (for arbitrators). You can import more if you want to test with multiple bidders.
+**Minimum Requirement:** Import at least 3 more accounts (for arbitrators). You can import more if you want to test with multiple bidders or complex scenarios.
 
 ### Step 5: Start the Local Environment
 
