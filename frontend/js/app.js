@@ -9,6 +9,8 @@ const CONTRACT_ABI = [
     "function getAllResolvedMarkets() external view returns (uint256[] memory)",
     "function getUserBets(address _user) external view returns (tuple(uint256 marketId, uint256 outcome, uint256 amount, uint256 timestamp)[] memory)",
     "function getOutcomeProbabilities(uint256 _marketId) external view returns (uint256[] memory)",
+    "function getUserBetAmount(uint256 _marketId, address _user, uint256 _outcome) external view returns (uint256)",
+    "function hasArbitratorVoted(uint256 _marketId, address _arbitrator) external view returns (bool)",
     "function withdrawWinnings(uint256 _marketId) external",
     "function voteOnOutcome(uint256 _marketId, uint256 _outcome) external",
     "function resolveMarket(uint256 _marketId, uint256 _winningOutcome) external"
@@ -236,7 +238,19 @@ async function loadActiveMarkets() {
             marketIds.map(async (id) => {
                 const market = await contract.getMarketInfo(id);
                 const probabilities = await contract.getOutcomeProbabilities(id);
-                return renderMarketCard(market, probabilities, 'active');
+
+                // Check if current user is an arbitrator who has already voted
+                let arbitratorHasVoted = false;
+                if (userAddress) {
+                    const isArbitrator = market.arbitrators.some(
+                        arb => arb.toLowerCase() === userAddress.toLowerCase()
+                    );
+                    if (isArbitrator) {
+                        arbitratorHasVoted = await contract.hasArbitratorVoted(id, userAddress);
+                    }
+                }
+
+                return renderMarketCard(market, probabilities, 'active', null, false, arbitratorHasVoted);
             })
         );
 
@@ -268,7 +282,36 @@ async function loadResolvedMarkets() {
             marketIds.map(async (id) => {
                 const market = await contract.getMarketInfo(id);
                 const probabilities = await contract.getOutcomeProbabilities(id);
-                return renderMarketCard(market, probabilities, 'resolved');
+
+                // Calculate user's winnings if they have any
+                let userWinnings = null;
+                let userHasLost = false;
+                if (userAddress && market.resolved) {
+                    const userBetAmount = await contract.getUserBetAmount(id, userAddress, market.winningOutcome);
+                    if (userBetAmount.gt(0)) {
+                        // Calculate potential winnings
+                        const userBetEth = parseFloat(ethers.utils.formatEther(userBetAmount));
+                        const winningPool = parseFloat(ethers.utils.formatEther(market.outcomeTotals[market.winningOutcome]));
+                        const totalPool = parseFloat(ethers.utils.formatEther(market.totalBets));
+                        const grossWinnings = (userBetEth * totalPool) / winningPool;
+                        const platformFee = 250; // 2.5% in basis points
+                        const fee = (grossWinnings * platformFee) / 10000;
+                        userWinnings = grossWinnings - fee;
+                    } else {
+                        // Check if user bet on any other outcome (losing bet)
+                        for (let outcomeIndex = 0; outcomeIndex < market.outcomes.length; outcomeIndex++) {
+                            if (outcomeIndex !== market.winningOutcome) {
+                                const losingBetAmount = await contract.getUserBetAmount(id, userAddress, outcomeIndex);
+                                if (losingBetAmount.gt(0)) {
+                                    userHasLost = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return renderMarketCard(market, probabilities, 'resolved', userWinnings, userHasLost);
             })
         );
 
@@ -279,7 +322,7 @@ async function loadResolvedMarkets() {
     }
 }
 
-function renderMarketCard(market, probabilities, status) {
+function renderMarketCard(market, probabilities, status, userWinnings = null, userHasLost = false, arbitratorHasVoted = false) {
     const resolutionDate = new Date(market.resolutionTime * 1000);
     const createdDate = new Date(market.createdAt * 1000);
     const totalBets = ethers.utils.formatEther(market.totalBets);
@@ -330,8 +373,8 @@ function renderMarketCard(market, probabilities, status) {
                 <button class="btn btn-success" onclick="placeBet(${market.id})">Place Bet</button>
             </div>
         `;
-    } else if (status === 'active' && isExpired && isArbitrator) {
-        // Show voting UI for arbitrator when market is expired
+    } else if (status === 'active' && isExpired && isArbitrator && !arbitratorHasVoted) {
+        // Show voting UI for arbitrator when market is expired and they haven't voted yet
         actionHTML = `
             <div class="arbitrator-panel">
                 <strong class="arbitrator-title">⚖️ You are an arbitrator for this market</strong>
@@ -349,10 +392,24 @@ function renderMarketCard(market, probabilities, status) {
                 </div>
             </div>
         `;
-    } else if (status === 'resolved') {
+    } else if (status === 'resolved' && userWinnings !== null && userWinnings > 0) {
         actionHTML = `
-            <div class="bet-form">
+            <div class="winnings-section">
+                <div class="winnings-info">
+                    <span class="winnings-label">💰 Your Winnings:</span>
+                    <span class="winnings-amount-large">${userWinnings.toFixed(4)} ETH</span>
+                    <span class="winnings-note">(After 2.5% platform fee)</span>
+                </div>
                 <button class="btn btn-success" onclick="withdrawWinnings(${market.id})">Withdraw Winnings</button>
+            </div>
+        `;
+    } else if (status === 'resolved' && userHasLost) {
+        actionHTML = `
+            <div class="losing-section">
+                <div class="losing-info">
+                    <span class="losing-icon">😔</span>
+                    <span class="losing-message">You did not win this market</span>
+                </div>
             </div>
         `;
     }

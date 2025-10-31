@@ -468,6 +468,56 @@ body {
     font-style: italic;
 }
 
+.winnings-section {
+    margin-top: 25px;
+    padding: 25px;
+    background: linear-gradient(135deg, #d4edda, #c3e6cb);
+    border: 2px solid #28a745;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.winnings-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+}
+
+.winnings-amount-large {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #28a745;
+    text-shadow: 0 2px 4px rgba(40, 167, 69, 0.2);
+}
+
+.losing-section {
+    margin-top: 25px;
+    padding: 20px;
+    background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+    border: 2px solid #dc3545;
+    border-radius: 12px;
+}
+
+.losing-info {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+}
+
+.losing-icon {
+    font-size: 2.5rem;
+}
+
+.losing-message {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #721c24;
+}
+
 .loading {
     text-align: center;
     padding: 40px;

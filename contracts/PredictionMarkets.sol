@@ -167,11 +167,12 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         newMarket.createdAt = block.timestamp;
         newMarket.exists = true;
 
-        // Calculate required votes: 2f+1 where f = (n-1)/3
-        // For 3 arbitrators: f=0, required=1 (just 1 vote but we'll use majority)
-        // For 4 arbitrators: f=1, required=3 (67%)
-        // For 7 arbitrators: f=2, required=5 (71%)
-        newMarket.requiredVotes = (_arbitrators.length * 2) / 3 + 1; // Simple majority + 1
+        // Calculate required votes: Simple majority (more than half)
+        // For 3 arbitrators: required=2 (2/3 = 67%)
+        // For 4 arbitrators: required=3 (3/4 = 75%)
+        // For 5 arbitrators: required=3 (3/5 = 60%)
+        // For 7 arbitrators: required=4 (4/7 = 57%)
+        newMarket.requiredVotes = (_arbitrators.length / 2) + 1; // Simple majority
 
         userMarkets[msg.sender].push(marketId);
 
@@ -361,9 +362,18 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
     function getUserBets(address _user) external view returns (UserBet[] memory) {
         return userBets[_user];
     }
-    
+
     function getUserMarkets(address _user) external view returns (uint256[] memory) {
         return userMarkets[_user];
+    }
+
+    function hasArbitratorVoted(uint256 _marketId, address _arbitrator)
+        external
+        view
+        validMarket(_marketId)
+        returns (bool)
+    {
+        return markets[_marketId].hasVoted[_arbitrator];
     }
     
     function getAllActiveMarkets() external view returns (uint256[] memory activeMarkets) {
