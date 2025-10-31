@@ -35,7 +35,7 @@ async function main() {
 
     // Create a sample market for testing
     console.log("\nCreating sample market...");
-    const resolutionTime = Math.floor(Date.now() / 1000) + (60); // 1 hours from now
+    const resolutionTime = Math.floor(Date.now() / 1000) + (60 * 5); // 5 mins from now
 
     // Use accounts 1, 2, 3 as arbitrators (not the deployer)
     const arbitrators = [acc1.address, acc2.address, acc3.address];
