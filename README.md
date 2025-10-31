@@ -213,9 +213,9 @@ You should now see:
 1. Click on the "Create Market" tab
 2. Fill in the form:
    - **Description:** "Will it rain tomorrow?"
-   - **Outcomes:** Add two outcomes (e.g., "Yes", "No")
+   - **Outcomes:** Add at least two outcomes (e.g., "Yes", "No")
    - **Resolution Time:** Select a date/time at least 1 hour in the future
-   - **Arbitrator Addresses:** Add 3 or more arbitrator addresses (must be odd number or can be even)
+   - **Arbitrator Addresses:** Add 3 or more arbitrator addresses
      - Example: Use addresses from Accounts #1, #2, #3 (see [TEST_ACCOUNTS.md](./TEST_ACCOUNTS.md))
      - Can have up to 21 arbitrators
      - If votes tie, market becomes a draw and bets are refunded
@@ -262,10 +262,6 @@ The project supports multiple networks (configured in `hardhat.config.js`):
 
 - **Local Development**: Hardhat network (Chain ID: 31337)
 - **Localhost**: Local Hardhat node at `http://127.0.0.1:8545`
-- **Goerli Testnet**: Ethereum test network (deprecated)
-- **Sepolia Testnet**: Ethereum test network
-- **Mumbai**: Polygon testnet
-- **BSC Testnet**: Binance Smart Chain testnet
 
 ### Smart Contract Parameters
 
@@ -280,19 +276,6 @@ Key parameters in the PredictionMarket contract:
 - **Maximum Arbitrators:** 21 allowed
 - **Minimum Creation Fee:** 0.001 ETH
 - **Voting Mechanism:** Simple majority (more than 50%)
-
-### Environment Variables (Optional)
-
-For deploying to public testnets (not required for local development):
-
-Create a `.env` file in the project root:
-```env
-INFURA_API_KEY=your_infura_project_id
-PRIVATE_KEY=your_wallet_private_key
-ETHERSCAN_API_KEY=your_etherscan_api_key
-POLYGONSCAN_API_KEY=your_polygonscan_api_key
-BSCSCAN_API_KEY=your_bscscan_api_key
-```
 
 ## 🔧 Troubleshooting
 
@@ -413,7 +396,6 @@ BSCSCAN_API_KEY=your_bscscan_api_key
 ### Modern UI/UX
 
 - **Responsive Design**: Works on desktop and mobile devices
-- **Dark Theme**: Modern gradient design with glassmorphism effects
 - **Real-time Updates**: Live probability calculations and bet tracking
 - **Wallet Integration**: Seamless MetaMask connection
 
@@ -536,7 +518,8 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [OpenZeppelin Contracts](https://docs.openzeppelin.com/contracts/)
 - [Hardhat Documentation](https://hardhat.org/docs/)
 - [Prediction Market Research](https://en.wikipedia.org/wiki/Prediction_market)
-- [Augur Protocol](https://www.augur.net/)
+- [Augur Protocol](https://www.augur.net/) - Decentralized prediction market platform
+- [Forepredict](https://forepredict.io/technology) - Modern prediction market implementation (design inspiration)
 - [Course GitHub Repository](https://github.com/BlockchainCourseNTU/resource/)
 
 ---
