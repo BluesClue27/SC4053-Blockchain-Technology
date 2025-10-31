@@ -339,14 +339,14 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
             uint256 refund = (totalUserBets * (10000 - platformFee - arbitratorFee)) / 10000;
 
             // Collect fees
-            uint256 platformCut = (totalUserBets * platformFee) / 10000;
-            uint256 arbitratorCut = (totalUserBets * arbitratorFee) / 10000;
+            uint256 drawPlatformCut = (totalUserBets * platformFee) / 10000;
+            uint256 drawArbitratorCut = (totalUserBets * arbitratorFee) / 10000;
 
-            market.collectedArbitratorFees += arbitratorCut;
+            market.collectedArbitratorFees += drawArbitratorCut;
 
             payable(msg.sender).transfer(refund);
-            if (platformCut > 0) {
-                payable(owner()).transfer(platformCut);
+            if (drawPlatformCut > 0) {
+                payable(owner()).transfer(drawPlatformCut);
             }
 
             emit Withdrawal(_marketId, msg.sender, refund);
@@ -389,47 +389,14 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         require(market.resolved, "Market not yet resolved");
         require(!market.arbitratorFeeClaimed[msg.sender], "Fee already claimed");
 
-        // Check if sender is an arbitrator
-        bool isArbitrator = false;
-        for (uint256 i = 0; i < market.arbitrators.length; i++) {
-            if (market.arbitrators[i] == msg.sender) {
-                isArbitrator = true;
-                break;
-            }
-        }
-        require(isArbitrator, "Not an arbitrator");
+        // Check if sender is an arbitrator and is eligible
+        require(_isArbitrator(_marketId, msg.sender), "Not an arbitrator");
+        require(_isEligibleForFee(_marketId, msg.sender), "Not eligible for fee - did not vote or voted incorrectly");
 
-        // Check eligibility based on market outcome
-        bool eligible = false;
-
-        if (market.isDraw) {
-            // For draws, all arbitrators who voted get paid
-            eligible = market.hasVoted[msg.sender];
-        } else {
-            // For normal resolution, only those who voted for winning outcome get paid
-            eligible = market.hasVoted[msg.sender] && market.arbitratorVote[msg.sender] == market.winningOutcome;
-        }
-
-        require(eligible, "Not eligible for fee - did not vote or voted incorrectly");
-
-        // Calculate how many arbitrators are eligible
-        uint256 eligibleCount = 0;
-        for (uint256 i = 0; i < market.arbitrators.length; i++) {
-            address arb = market.arbitrators[i];
-            if (market.isDraw) {
-                if (market.hasVoted[arb]) {
-                    eligibleCount++;
-                }
-            } else {
-                if (market.hasVoted[arb] && market.arbitratorVote[arb] == market.winningOutcome) {
-                    eligibleCount++;
-                }
-            }
-        }
-
+        // Calculate eligible count and share
+        uint256 eligibleCount = _countEligibleArbitrators(_marketId);
         require(eligibleCount > 0, "No eligible arbitrators");
 
-        // Calculate arbitrator's share
         uint256 arbitratorShare = market.collectedArbitratorFees / eligibleCount;
         require(arbitratorShare > 0, "No fees to claim");
 
@@ -438,6 +405,46 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         payable(msg.sender).transfer(arbitratorShare);
 
         emit ArbitratorFeeClaimed(_marketId, msg.sender, arbitratorShare);
+    }
+
+    function _isArbitrator(uint256 _marketId, address _address) internal view returns (bool) {
+        Market storage market = markets[_marketId];
+        for (uint256 i = 0; i < market.arbitrators.length; i++) {
+            if (market.arbitrators[i] == _address) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function _isEligibleForFee(uint256 _marketId, address _arbitrator) internal view returns (bool) {
+        Market storage market = markets[_marketId];
+
+        if (market.isDraw) {
+            return market.hasVoted[_arbitrator];
+        } else {
+            return market.hasVoted[_arbitrator] && market.arbitratorVote[_arbitrator] == market.winningOutcome;
+        }
+    }
+
+    function _countEligibleArbitrators(uint256 _marketId) internal view returns (uint256) {
+        Market storage market = markets[_marketId];
+        uint256 count = 0;
+
+        for (uint256 i = 0; i < market.arbitrators.length; i++) {
+            address arb = market.arbitrators[i];
+            if (market.isDraw) {
+                if (market.hasVoted[arb]) {
+                    count++;
+                }
+            } else {
+                if (market.hasVoted[arb] && market.arbitratorVote[arb] == market.winningOutcome) {
+                    count++;
+                }
+            }
+        }
+
+        return count;
     }
 
     function getMarketInfo(uint256 _marketId) 
