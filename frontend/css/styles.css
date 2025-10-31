@@ -425,6 +425,19 @@ body {
     border-radius: 12px;
 }
 
+.winnings-panel.withdrawn {
+    background: linear-gradient(135deg, #d1ecf1, #bee5eb);
+    border: 2px solid #17a2b8;
+}
+
+.winnings-panel.withdrawn .winnings-title {
+    color: #0c5460;
+}
+
+.winnings-panel.withdrawn .winnings-value {
+    color: #17a2b8;
+}
+
 .winnings-header {
     margin-bottom: 15px;
 }
@@ -476,7 +489,7 @@ body {
     border-radius: 12px;
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 20px;
 }
 
 .winnings-info {
@@ -516,6 +529,37 @@ body {
     font-size: 1.2rem;
     font-weight: 600;
     color: #721c24;
+}
+
+.withdrawn-section {
+    margin-top: 25px;
+    padding: 20px;
+    background: linear-gradient(135deg, #d1ecf1, #bee5eb);
+    border: 2px solid #17a2b8;
+    border-radius: 12px;
+}
+
+.withdrawn-info {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+}
+
+.withdrawn-icon {
+    font-size: 2.5rem;
+}
+
+.withdrawn-message {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #0c5460;
+}
+
+.withdrawn-amount {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #17a2b8;
 }
 
 .loading {

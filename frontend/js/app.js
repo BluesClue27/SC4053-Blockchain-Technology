@@ -286,9 +286,13 @@ async function loadResolvedMarkets() {
                 // Calculate user's winnings if they have any
                 let userWinnings = null;
                 let userHasLost = false;
+                let userHasWithdrawn = false;
                 if (userAddress && market.resolved) {
                     const userBetAmount = await contract.getUserBetAmount(id, userAddress, market.winningOutcome);
                     if (userBetAmount.gt(0)) {
+                        // Check if user has already withdrawn
+                        userHasWithdrawn = await contract.hasUserWithdrawn(id, userAddress);
+
                         // Calculate potential winnings
                         const userBetEth = parseFloat(ethers.utils.formatEther(userBetAmount));
                         const winningPool = parseFloat(ethers.utils.formatEther(market.outcomeTotals[market.winningOutcome]));
@@ -311,7 +315,7 @@ async function loadResolvedMarkets() {
                     }
                 }
 
-                return renderMarketCard(market, probabilities, 'resolved', userWinnings, userHasLost);
+                return renderMarketCard(market, probabilities, 'resolved', userWinnings, userHasLost, false, userHasWithdrawn);
             })
         );
 
@@ -322,7 +326,7 @@ async function loadResolvedMarkets() {
     }
 }
 
-function renderMarketCard(market, probabilities, status, userWinnings = null, userHasLost = false, arbitratorHasVoted = false) {
+function renderMarketCard(market, probabilities, status, userWinnings = null, userHasLost = false, arbitratorHasVoted = false, userHasWithdrawn = false) {
     const resolutionDate = new Date(market.resolutionTime * 1000);
     const createdDate = new Date(market.createdAt * 1000);
     const totalBets = ethers.utils.formatEther(market.totalBets);
@@ -393,16 +397,28 @@ function renderMarketCard(market, probabilities, status, userWinnings = null, us
             </div>
         `;
     } else if (status === 'resolved' && userWinnings !== null && userWinnings > 0) {
-        actionHTML = `
-            <div class="winnings-section">
-                <div class="winnings-info">
-                    <span class="winnings-label">💰 Your Winnings:</span>
-                    <span class="winnings-amount-large">${userWinnings.toFixed(4)} ETH</span>
-                    <span class="winnings-note">(After 2.5% platform fee)</span>
+        if (userHasWithdrawn) {
+            actionHTML = `
+                <div class="withdrawn-section">
+                    <div class="withdrawn-info">
+                        <span class="withdrawn-icon">✅</span>
+                        <span class="withdrawn-message">Winnings Already Withdrawn</span>
+                        <span class="withdrawn-amount">${userWinnings.toFixed(4)} ETH</span>
+                    </div>
                 </div>
-                <button class="btn btn-success" onclick="withdrawWinnings(${market.id})">Withdraw Winnings</button>
-            </div>
-        `;
+            `;
+        } else {
+            actionHTML = `
+                <div class="winnings-section">
+                    <div class="winnings-info">
+                        <span class="winnings-label">💰 Your Winnings:</span>
+                        <span class="winnings-amount-large">${userWinnings.toFixed(4)} ETH</span>
+                        <span class="winnings-note">(After 2.5% platform fee)</span>
+                    </div>
+                    <button class="btn btn-success" onclick="withdrawWinnings(${market.id})">Withdraw Winnings</button>
+                </div>
+            `;
+        }
     } else if (status === 'resolved' && userHasLost) {
         actionHTML = `
             <div class="losing-section">
@@ -647,25 +663,44 @@ async function loadMyBets() {
                     // Create winnings panel if market is resolved and user has winning bets
                     let winningsPanel = '';
                     if (market.resolved && hasWinningBet) {
-                        winningsPanel = `
-                            <div class="winnings-panel">
-                                <div class="winnings-header">
-                                    <span class="winnings-title">💰 Your Winnings</span>
-                                </div>
-                                <div class="winnings-details">
-                                    <div class="winnings-amount">
-                                        <span class="winnings-label">Potential Payout:</span>
-                                        <span class="winnings-value">${potentialWinnings.toFixed(4)} ETH</span>
+                        // Check if user has already withdrawn
+                        const hasWithdrawn = await contract.hasUserWithdrawn(marketId, userAddress);
+
+                        if (hasWithdrawn) {
+                            winningsPanel = `
+                                <div class="winnings-panel withdrawn">
+                                    <div class="winnings-header">
+                                        <span class="winnings-title">✅ Winnings Withdrawn</span>
                                     </div>
-                                    <button class="btn btn-success" onclick="withdrawWinnings(${marketId})" style="margin-top: 10px;">
-                                        Withdraw Winnings
-                                    </button>
-                                    <div class="winnings-note">
-                                        (After 2.5% platform fee)
+                                    <div class="winnings-details">
+                                        <div class="winnings-amount">
+                                            <span class="winnings-label">Amount Withdrawn:</span>
+                                            <span class="winnings-value">${potentialWinnings.toFixed(4)} ETH</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        `;
+                            `;
+                        } else {
+                            winningsPanel = `
+                                <div class="winnings-panel">
+                                    <div class="winnings-header">
+                                        <span class="winnings-title">💰 Your Winnings</span>
+                                    </div>
+                                    <div class="winnings-details">
+                                        <div class="winnings-amount">
+                                            <span class="winnings-label">Potential Payout:</span>
+                                            <span class="winnings-value">${potentialWinnings.toFixed(4)} ETH</span>
+                                        </div>
+                                        <button class="btn btn-success" onclick="withdrawWinnings(${marketId})" style="margin-top: 10px;">
+                                            Withdraw Winnings
+                                        </button>
+                                        <div class="winnings-note">
+                                            (After 2.5% platform fee)
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }
                     }
 
                     return `

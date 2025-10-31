@@ -375,7 +375,16 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
     {
         return markets[_marketId].hasVoted[_arbitrator];
     }
-    
+
+    function hasUserWithdrawn(uint256 _marketId, address _user)
+        external
+        view
+        validMarket(_marketId)
+        returns (bool)
+    {
+        return markets[_marketId].hasWithdrawn[_user];
+    }
+
     function getAllActiveMarkets() external view returns (uint256[] memory activeMarkets) {
         uint256 activeCount = 0;
 
