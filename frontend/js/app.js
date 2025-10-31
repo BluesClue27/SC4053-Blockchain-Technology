@@ -383,7 +383,7 @@ function renderMarketCard(market, probabilities, status, userWinnings = null, us
             <div class="arbitrator-panel">
                 <strong class="arbitrator-title">⚖️ You are an arbitrator for this market</strong>
                 <p class="arbitrator-text">Vote on the winning outcome:</p>
-                <p class="arbitrator-text">Votes needed: ${market.requiredVotes} | Current votes: ${market.totalVotes}</p>
+                <p class="arbitrator-text">Majority votes needed: ${market.requiredVotes} | Current votes: ${market.totalVotes}</p>
                 <div class="bet-form">
                     <select id="winningOutcome${market.id}" class="resolution-select">
                         ${market.outcomes.map((outcome, index) =>
@@ -616,6 +616,23 @@ async function loadMyBets() {
                 try {
                     const market = await contract.getMarketInfo(marketId);
                     const marketBets = betsByMarket[marketId];
+                    const probabilities = await contract.getOutcomeProbabilities(marketId);
+
+                    // Consolidate bets by outcome
+                    const betsByOutcome = {};
+                    for (const bet of marketBets) {
+                        const outcomeIndex = bet.outcome;
+                        if (!betsByOutcome[outcomeIndex]) {
+                            betsByOutcome[outcomeIndex] = {
+                                outcome: market.outcomes[outcomeIndex],
+                                outcomeIndex: outcomeIndex,
+                                totalAmount: 0,
+                                bets: []
+                            };
+                        }
+                        betsByOutcome[outcomeIndex].totalAmount += parseFloat(ethers.utils.formatEther(bet.amount));
+                        betsByOutcome[outcomeIndex].bets.push(bet);
+                    }
 
                     // Calculate if user has winning bets and potential winnings
                     let hasWinningBet = false;
@@ -641,21 +658,41 @@ async function loadMyBets() {
                         }
                     }
 
-                    const betsListHTML = marketBets.map(bet => {
-                        const betDate = new Date(bet.timestamp * 1000);
-                        const betAmount = ethers.utils.formatEther(bet.amount);
-                        const outcome = market.outcomes[bet.outcome];
-                        const isWinningBet = market.resolved && bet.outcome === market.winningOutcome;
+                    const betsListHTML = Object.values(betsByOutcome).map(outcomeData => {
+                        const isWinningBet = market.resolved && outcomeData.outcomeIndex === market.winningOutcome;
+                        const probability = (probabilities[outcomeData.outcomeIndex] / 100).toFixed(1);
+
+                        // Calculate potential earnings for active markets
+                        let potentialEarnings = 0;
+                        if (!market.resolved && market.totalBets > 0) {
+                            const outcomePool = parseFloat(ethers.utils.formatEther(market.outcomeTotals[outcomeData.outcomeIndex]));
+                            const totalPool = parseFloat(ethers.utils.formatEther(market.totalBets));
+                            if (outcomePool > 0) {
+                                const grossWinnings = (outcomeData.totalAmount * totalPool) / outcomePool;
+                                const platformFee = 250; // 2.5% in basis points
+                                const fee = (grossWinnings * platformFee) / 10000;
+                                potentialEarnings = grossWinnings - fee;
+                            }
+                        }
+
+                        const betCountText = outcomeData.bets.length > 1 ? ` (${outcomeData.bets.length} bets)` : '';
 
                         return `
                             <div class="bet-item ${isWinningBet ? 'bet-winner' : ''}">
                                 <div class="bet-outcome">
-                                    ${outcome} ${isWinningBet ? '🏆' : ''}
+                                    ${outcomeData.outcome} ${isWinningBet ? '🏆' : ''}${betCountText}
+                                    <span class="outcome-probability">${probability}%</span>
                                 </div>
-                                <div class="bet-amount">${betAmount} ETH</div>
-                                <div class="bet-date">
-                                    ${betDate.toLocaleDateString()} ${betDate.toLocaleTimeString()}
+                                <div class="bet-amount">
+                                    <div class="amount-label">Total Bet:</div>
+                                    <div class="amount-value">${outcomeData.totalAmount.toFixed(4)} ETH</div>
                                 </div>
+                                ${!market.resolved && potentialEarnings > 0 ? `
+                                    <div class="potential-earnings">
+                                        <div class="earnings-label">Potential Payout:</div>
+                                        <div class="earnings-value">💰 ${potentialEarnings.toFixed(4)} ETH</div>
+                                    </div>
+                                ` : ''}
                             </div>
                         `;
                     }).join('');

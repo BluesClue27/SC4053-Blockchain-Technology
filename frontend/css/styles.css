@@ -393,13 +393,64 @@ body {
     font-size: 1.1rem;
     color: #667eea;
     margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.outcome-probability {
+    display: inline-block;
+    padding: 4px 10px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
 }
 
 .bet-amount {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.amount-label {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.amount-value {
     font-weight: 600;
     font-size: 1rem;
     color: #333;
-    margin-bottom: 8px;
+}
+
+.potential-earnings {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    margin-top: 8px;
+    background: linear-gradient(135deg, #fff3cd, #ffe69c);
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ffc107;
+}
+
+.earnings-label {
+    font-size: 0.9rem;
+    color: #856404;
+    font-weight: 600;
+}
+
+.earnings-value {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #f59e0b;
 }
 
 .bet-date {
