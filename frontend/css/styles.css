@@ -219,6 +219,11 @@ body {
     color: #0c5460;
 }
 
+.status-draw {
+    background: #e2e3e5;
+    color: #383d41;
+}
+
 .status-expired {
     background: #f8d7da;
     color: #721c24;

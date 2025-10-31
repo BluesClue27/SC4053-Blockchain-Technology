@@ -33,11 +33,16 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         uint256 createdAt;
         bool exists;
         Category category;                  // Market category
+        bool isDraw;                        // True if market ended in a tie
         // Voting mechanism
         mapping(address => bool) hasVoted;
+        mapping(address => uint256) arbitratorVote; // arbitrator => outcome they voted for
         mapping(uint256 => uint256) outcomeVotes;  // outcome => vote count
         uint256 totalVotes;
-        uint256 requiredVotes;              // Minimum votes needed (2f+1)
+        uint256 requiredVotes;              // Minimum votes needed for majority
+        // Fee tracking
+        uint256 collectedArbitratorFees;    // Total arbitrator fees collected
+        mapping(address => bool) arbitratorFeeClaimed; // Track if arbitrator claimed their fee
     }
     
     struct MarketInfo {
@@ -54,6 +59,7 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         uint256 createdAt;
         uint256 totalVotes;
         uint256 requiredVotes;
+        bool isDraw;
     }
     
     struct UserBet {
@@ -68,7 +74,8 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
     mapping(address => UserBet[]) public userBets; // all bets by user
     
     uint256 public nextMarketId = 1;
-    uint256 public platformFee = 250; // 2.5% (out of 10000)
+    uint256 public platformFee = 150; // 1.5% (out of 10000)
+    uint256 public arbitratorFee = 100; // 1.0% (out of 10000) - split among all arbitrators
     uint256 public constant MAX_OUTCOMES = 10;
     uint256 public constant MIN_RESOLUTION_TIME = 1 minutes;
     
@@ -102,6 +109,12 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         uint256 indexed marketId,
         address indexed arbitrator,
         uint256 indexed outcome
+    );
+
+    event ArbitratorFeeClaimed(
+        uint256 indexed marketId,
+        address indexed arbitrator,
+        uint256 amount
     );
 
     modifier validMarket(uint256 _marketId) {
@@ -226,6 +239,7 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
 
         // Record the vote
         market.hasVoted[msg.sender] = true;
+        market.arbitratorVote[msg.sender] = _outcome; // Record what they voted for
         market.outcomeVotes[_outcome]++;
         market.totalVotes++;
 
@@ -235,7 +249,11 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         if (market.outcomeVotes[_outcome] >= market.requiredVotes) {
             market.resolved = true;
             market.winningOutcome = _outcome;
+            market.isDraw = false;
             emit MarketResolved(_marketId, _outcome, market.outcomeTotals[_outcome]);
+        } else if (market.totalVotes == market.arbitrators.length) {
+            // All arbitrators have voted, check for draw
+            _checkForDraw(_marketId);
         }
     }
 
@@ -253,6 +271,7 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
 
         // Record the vote
         market.hasVoted[msg.sender] = true;
+        market.arbitratorVote[msg.sender] = _winningOutcome; // Record what they voted for
         market.outcomeVotes[_winningOutcome]++;
         market.totalVotes++;
 
@@ -262,42 +281,165 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         if (market.outcomeVotes[_winningOutcome] >= market.requiredVotes) {
             market.resolved = true;
             market.winningOutcome = _winningOutcome;
+            market.isDraw = false;
             emit MarketResolved(_marketId, _winningOutcome, market.outcomeTotals[_winningOutcome]);
+        } else if (market.totalVotes == market.arbitrators.length) {
+            // All arbitrators have voted, check for draw
+            _checkForDraw(_marketId);
         }
     }
-    
-    function withdrawWinnings(uint256 _marketId) 
-        external 
-        validMarket(_marketId) 
-        nonReentrant 
+
+    function _checkForDraw(uint256 _marketId) internal {
+        Market storage market = markets[_marketId];
+
+        // Find the maximum votes any outcome received
+        uint256 maxVotes = 0;
+        uint256 outcomeWithMaxVotes = 0;
+        uint256 outcomesWithMaxVotes = 0;
+
+        for (uint256 i = 0; i < market.outcomes.length; i++) {
+            if (market.outcomeVotes[i] > maxVotes) {
+                maxVotes = market.outcomeVotes[i];
+                outcomeWithMaxVotes = i;
+                outcomesWithMaxVotes = 1;
+            } else if (market.outcomeVotes[i] == maxVotes && maxVotes > 0) {
+                outcomesWithMaxVotes++;
+            }
+        }
+
+        // If multiple outcomes have the same max votes, it's a draw
+        if (outcomesWithMaxVotes > 1) {
+            market.resolved = true;
+            market.isDraw = true;
+            market.winningOutcome = 0; // Doesn't matter for draws
+            emit MarketResolved(_marketId, 0, 0); // 0 indicates draw
+        }
+    }
+
+    function withdrawWinnings(uint256 _marketId)
+        external
+        validMarket(_marketId)
+        nonReentrant
     {
         Market storage market = markets[_marketId];
         require(market.resolved, "Market not yet resolved");
         require(!market.hasWithdrawn[msg.sender], "Already withdrawn");
-        
+
+        market.hasWithdrawn[msg.sender] = true;
+
+        // Handle draw scenario - refund all bets minus fees
+        if (market.isDraw) {
+            uint256 totalUserBets = 0;
+            for (uint256 i = 0; i < market.outcomes.length; i++) {
+                totalUserBets += market.userBets[msg.sender][i];
+            }
+            require(totalUserBets > 0, "No bets found");
+
+            // Deduct fees from refund
+            uint256 refund = (totalUserBets * (10000 - platformFee - arbitratorFee)) / 10000;
+
+            // Collect fees
+            uint256 platformCut = (totalUserBets * platformFee) / 10000;
+            uint256 arbitratorCut = (totalUserBets * arbitratorFee) / 10000;
+
+            market.collectedArbitratorFees += arbitratorCut;
+
+            payable(msg.sender).transfer(refund);
+            if (platformCut > 0) {
+                payable(owner()).transfer(platformCut);
+            }
+
+            emit Withdrawal(_marketId, msg.sender, refund);
+            return;
+        }
+
+        // Normal resolution - pay winners
         uint256 userWinningBet = market.userBets[msg.sender][market.winningOutcome];
         require(userWinningBet > 0, "No winning bet found");
-        
+
         uint256 winningPool = market.outcomeTotals[market.winningOutcome];
         uint256 totalPool = market.totalBets;
-        
+
         // Calculate proportional winnings
         uint256 winnings = (userWinningBet * totalPool) / winningPool;
-        
-        // Deduct platform fee
-        uint256 fee = (winnings * platformFee) / 10000;
-        uint256 payout = winnings - fee;
-        
-        market.hasWithdrawn[msg.sender] = true;
-        
+
+        // Deduct platform and arbitrator fees
+        uint256 payout = (winnings * (10000 - platformFee - arbitratorFee)) / 10000;
+
+        // Collect fees
+        uint256 platformCut = (winnings * platformFee) / 10000;
+        uint256 arbitratorCut = (winnings * arbitratorFee) / 10000;
+
+        market.collectedArbitratorFees += arbitratorCut;
+
         payable(msg.sender).transfer(payout);
-        if (fee > 0) {
-            payable(owner()).transfer(fee);
+        if (platformCut > 0) {
+            payable(owner()).transfer(platformCut);
         }
-        
+
         emit Withdrawal(_marketId, msg.sender, payout);
     }
-    
+
+    function claimArbitratorFee(uint256 _marketId)
+        external
+        validMarket(_marketId)
+        nonReentrant
+    {
+        Market storage market = markets[_marketId];
+        require(market.resolved, "Market not yet resolved");
+        require(!market.arbitratorFeeClaimed[msg.sender], "Fee already claimed");
+
+        // Check if sender is an arbitrator
+        bool isArbitrator = false;
+        for (uint256 i = 0; i < market.arbitrators.length; i++) {
+            if (market.arbitrators[i] == msg.sender) {
+                isArbitrator = true;
+                break;
+            }
+        }
+        require(isArbitrator, "Not an arbitrator");
+
+        // Check eligibility based on market outcome
+        bool eligible = false;
+
+        if (market.isDraw) {
+            // For draws, all arbitrators who voted get paid
+            eligible = market.hasVoted[msg.sender];
+        } else {
+            // For normal resolution, only those who voted for winning outcome get paid
+            eligible = market.hasVoted[msg.sender] && market.arbitratorVote[msg.sender] == market.winningOutcome;
+        }
+
+        require(eligible, "Not eligible for fee - did not vote or voted incorrectly");
+
+        // Calculate how many arbitrators are eligible
+        uint256 eligibleCount = 0;
+        for (uint256 i = 0; i < market.arbitrators.length; i++) {
+            address arb = market.arbitrators[i];
+            if (market.isDraw) {
+                if (market.hasVoted[arb]) {
+                    eligibleCount++;
+                }
+            } else {
+                if (market.hasVoted[arb] && market.arbitratorVote[arb] == market.winningOutcome) {
+                    eligibleCount++;
+                }
+            }
+        }
+
+        require(eligibleCount > 0, "No eligible arbitrators");
+
+        // Calculate arbitrator's share
+        uint256 arbitratorShare = market.collectedArbitratorFees / eligibleCount;
+        require(arbitratorShare > 0, "No fees to claim");
+
+        market.arbitratorFeeClaimed[msg.sender] = true;
+
+        payable(msg.sender).transfer(arbitratorShare);
+
+        emit ArbitratorFeeClaimed(_marketId, msg.sender, arbitratorShare);
+    }
+
     function getMarketInfo(uint256 _marketId) 
         external 
         view 
@@ -324,7 +466,8 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
             outcomeTotals: outcomeTotals,
             createdAt: market.createdAt,
             totalVotes: market.totalVotes,
-            requiredVotes: market.requiredVotes
+            requiredVotes: market.requiredVotes,
+            isDraw: market.isDraw
         });
     }
     
@@ -431,7 +574,12 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         require(_newFee <= 1000, "Fee cannot exceed 10%"); // Max 10%
         platformFee = _newFee;
     }
-    
+
+    function setArbitratorFee(uint256 _newFee) external onlyOwner {
+        require(_newFee <= 500, "Arbitrator fee cannot exceed 5%"); // Max 5%
+        arbitratorFee = _newFee;
+    }
+
     function emergencyWithdraw() external onlyOwner {
         payable(owner()).transfer(address(this).balance);
     }

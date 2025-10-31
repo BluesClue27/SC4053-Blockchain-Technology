@@ -38,16 +38,22 @@ See [First-Time Setup Guide](#-first-time-setup-guide) below for detailed step-b
 ### Core Features
 
 - **Market Creation**: Users can create new prediction markets with custom descriptions, outcomes, and resolution times
+- **Multi-Arbitrator System**: Markets require 3-21 arbitrators for decentralized resolution
+- **Voting Mechanism**: Arbitrators vote on outcomes with simple majority consensus
 - **Betting System**: Users can place bets on different outcomes using ETH
-- **Market Resolution**: Designated arbitrators can resolve markets and determine winning outcomes
+- **Draw Handling**: Automatic bet refunds (minus fees) when arbitrator votes tie
 - **Winnings Distribution**: Winners can withdraw their proportional share of the total bet pool
 - **Market Discovery**: Browse active and resolved markets with real-time probability calculations
+- **Fee Distribution**: 2.5% total fees split between platform (1.5%) and arbitrators (1%)
 
-<!-- ### Bonus Features
-- **Dynamic Pricing**: Market prices reflect the wisdom of the crowd through betting volumes
-- **Platform Fees**: Configurable platform fees for market resolution (default 2.5%)
-- **Reentrancy Protection**: Security measures against common smart contract attacks
-- **Event Logging**: Comprehensive event emission for frontend integration -->
+### Advanced Features
+
+- **Fair Arbitrator Compensation**: Only arbitrators who voted correctly receive fees
+- **Byzantine Fault Tolerance**: Markets resolve with simple majority, preventing single point of failure
+- **Consolidated Bet Display**: Multiple bets on same outcome are automatically grouped
+- **Potential Earnings Calculator**: Real-time calculation of potential payouts for active markets
+- **Withdrawal Tracking**: System tracks and prevents double-withdrawals
+- **Dynamic Pricing**: Market probabilities reflect betting volumes in real-time
 
 ## 🏗 Project Structure
 
@@ -209,9 +215,10 @@ You should now see:
    - **Description:** "Will it rain tomorrow?"
    - **Outcomes:** Add two outcomes (e.g., "Yes", "No")
    - **Resolution Time:** Select a date/time at least 1 hour in the future
-   - **Arbitrator Addresses:** Add at least 3 arbitrator addresses from the accounts you imported
+   - **Arbitrator Addresses:** Add 3 or more arbitrator addresses (must be odd number or can be even)
      - Example: Use addresses from Accounts #1, #2, #3 (see [TEST_ACCOUNTS.md](./TEST_ACCOUNTS.md))
-     - You can use any 3+ addresses from your imported accounts
+     - Can have up to 21 arbitrators
+     - If votes tie, market becomes a draw and bets are refunded
    - **Creation Fee:** `0.001` ETH (minimum)
 3. Click "Create Market"
 4. Confirm the transaction in MetaMask
@@ -264,11 +271,15 @@ The project supports multiple networks (configured in `hardhat.config.js`):
 
 Key parameters in the PredictionMarket contract:
 
-- **Platform Fee:** 2.5% (250 basis points)
-- **Minimum Resolution Time:** 1 hour from market creation
+- **Platform Fee:** 1.5% (150 basis points) - Goes to contract owner
+- **Arbitrator Fee:** 1.0% (100 basis points) - Split among arbitrators who voted correctly
+- **Total Fees:** 2.5% combined
+- **Minimum Resolution Time:** 1 minute from market creation
 - **Maximum Outcomes:** 10 per market
+- **Minimum Arbitrators:** 3 required
+- **Maximum Arbitrators:** 21 allowed
 - **Minimum Creation Fee:** 0.001 ETH
-- **Fee Recipient:** Contract deployer (can be changed)
+- **Voting Mechanism:** Simple majority (more than 50%)
 
 ### Environment Variables (Optional)
 
@@ -342,32 +353,49 @@ BSCSCAN_API_KEY=your_bscscan_api_key
 3. Enter bet amount in ETH
 4. Click "Place Bet" and confirm transaction
 
-### Resolving Markets
+### Resolving Markets (Arbitrators)
 
-1. Only designated arbitrators can resolve markets
-2. Markets can only be resolved after the resolution time
-3. Arbitrator selects the winning outcome
-4. All bets are then settled based on the result
+1. Only designated arbitrators can vote on market outcomes
+2. Markets can only be resolved after the resolution time has passed
+3. Each arbitrator casts one vote for what they believe is the correct outcome
+4. **Winning Conditions:**
+   - Market resolves when any outcome receives majority votes (>50%)
+   - If all arbitrators vote but no majority: Market declared a **DRAW**
+5. **Draw Scenario:** All bets are refunded minus 2.5% fees
 
 ### Withdrawing Winnings
 
 1. After market resolution, winners can withdraw their share
 2. Winnings are calculated proportionally based on bet amounts
-3. Platform fee (2.5%) is deducted from winnings
+3. Total fees (2.5%) are deducted: 1.5% platform + 1% arbitrators
 4. Go to resolved market and click "Withdraw Winnings"
+5. **Draw Markets:** All bettors receive refunds minus fees
+
+### Claiming Arbitrator Fees
+
+1. Arbitrators can claim fees after market is resolved
+2. **Eligibility:**
+   - For normal resolution: Only arbitrators who voted for the **winning outcome**
+   - For draws: All arbitrators who **voted** (any outcome)
+   - Non-voters receive nothing
+3. Fees are split equally among eligible arbitrators
+4. Each arbitrator must claim their own fees by calling `claimArbitratorFee(marketId)`
 
 ## 📜 Smart Contract Functions
 
 ### Public Functions
 
-| Function                    | Description                         | Access            |
-| --------------------------- | ----------------------------------- | ----------------- |
-| `createMarket()`            | Create a new prediction market      | Anyone (with fee) |
-| `placeBet()`                | Place a bet on market outcome       | Anyone            |
-| `resolveMarket()`           | Resolve market with winning outcome | Arbitrator only   |
-| `withdrawWinnings()`        | Withdraw winnings after resolution  | Winners only      |
-| `getMarketInfo()`           | Get complete market information     | Anyone            |
-| `getOutcomeProbabilities()` | Get current market probabilities    | Anyone            |
+| Function                    | Description                                          | Access            |
+| --------------------------- | ---------------------------------------------------- | ----------------- |
+| `createMarket()`            | Create a new prediction market with multiple arbitrators | Anyone (with fee) |
+| `placeBet()`                | Place a bet on market outcome                        | Anyone (except creator/arbitrators) |
+| `voteOnOutcome()`           | Vote on winning outcome (arbitrator function)        | Arbitrators only  |
+| `resolveMarket()`           | Legacy vote function (same as voteOnOutcome)         | Arbitrators only  |
+| `withdrawWinnings()`        | Withdraw winnings or refund after resolution         | Bettors only      |
+| `claimArbitratorFee()`      | Claim arbitrator fee share                           | Eligible arbitrators only |
+| `getMarketInfo()`           | Get complete market information including draw status | Anyone           |
+| `getOutcomeProbabilities()` | Get current market probabilities                     | Anyone            |
+| `hasUserWithdrawn()`        | Check if user has withdrawn from market              | Anyone            |
 
 ### View Functions
 
@@ -377,6 +405,8 @@ BSCSCAN_API_KEY=your_bscscan_api_key
 | `getAllResolvedMarkets()` | Get IDs of all resolved markets            |
 | `getUserBets()`           | Get all bets placed by a user              |
 | `getUserBetAmount()`      | Get user's bet amount for specific outcome |
+| `getUserMarkets()`        | Get all markets created by a user          |
+| `hasArbitratorVoted()`    | Check if specific arbitrator has voted     |
 
 ## 🖥 Frontend Features
 
@@ -405,24 +435,92 @@ BSCSCAN_API_KEY=your_bscscan_api_key
 
 ### Smart Contract Security
 
-- **ReentrancyGuard**: Protection against reentrancy attacks
-- **Access Control**: Role-based permissions using OpenZeppelin
+- **ReentrancyGuard**: Protection against reentrancy attacks on withdrawals
+- **Access Control**: Role-based permissions using OpenZeppelin Ownable
 - **Input Validation**: Comprehensive validation of all parameters
 - **Safe Math**: Using Solidity 0.8+ built-in overflow protection
+- **Unique Arbitrators**: Prevents duplicate arbitrator addresses
+- **Conflict of Interest Prevention**: Market creators and arbitrators cannot bet on their own markets
+- **Double-Withdrawal Protection**: Tracks withdrawal status to prevent duplicate claims
+- **Fee Claim Protection**: Arbitrators can only claim fees once per market
+
+### Fairness & Game Theory
+
+- **Byzantine Fault Tolerance**: Simple majority voting prevents single arbitrator manipulation
+- **Incentive Alignment**: Only correct voters earn fees, discouraging collusion
+- **Draw Handling**: Fair refunds when consensus cannot be reached
+- **No Free Riders**: Non-participating arbitrators receive no compensation
 
 ### Frontend Security
 
 - **Input Sanitization**: All user inputs are validated
 - **Wallet Integration**: Secure interaction with MetaMask
 - **Error Boundaries**: Graceful handling of blockchain errors
+- **Address Validation**: Ethereum address format verification
+
+## 💰 Fee Distribution Examples
+
+### Example 1: Normal Resolution (3 Arbitrators, 2 Vote Correctly)
+- **Market**: "Will it rain tomorrow?"
+- **Total Pool**: 100 ETH
+- **Arbitrator A**: Votes "Yes" ✅
+- **Arbitrator B**: Votes "Yes" ✅
+- **Arbitrator C**: Votes "No" ❌
+- **Outcome**: "Yes" wins (2/3 majority)
+
+**Winner with 50 ETH bet receives:**
+- Gross winnings: 50 ETH
+- Platform fee (1.5%): -0.75 ETH
+- Arbitrator fee (1%): -0.5 ETH
+- **Net payout: 48.75 ETH**
+
+**Arbitrator fees:**
+- Total arbitrator fees collected: 0.5 ETH
+- Split between A and B only: **0.25 ETH each**
+- Arbitrator C gets: **0 ETH** (voted wrong)
+
+### Example 2: Draw (4 Arbitrators, 2-2 Tie)
+- **Market**: "Will candidate win election?"
+- **Total Pool**: 200 ETH
+- **Arbitrator A**: Votes "Yes"
+- **Arbitrator B**: Votes "Yes"
+- **Arbitrator C**: Votes "No"
+- **Arbitrator D**: Votes "No"
+- **Outcome**: **DRAW** (no majority)
+
+**All bettors receive refund:**
+- If you bet 10 ETH total on any outcomes
+- Platform fee (1.5%): -0.15 ETH
+- Arbitrator fee (1%): -0.1 ETH
+- **Refund: 9.75 ETH**
+
+**Arbitrator fees:**
+- Total arbitrator fees: ~2 ETH (1% of 200 ETH)
+- Split among ALL who voted (A, B, C, D): **0.5 ETH each**
+- Non-voters get: **0 ETH**
+
+### Example 3: Low Participation (5 Arbitrators, Only 3 Vote)
+- **Arbitrator A**: Votes "Yes" ✅
+- **Arbitrator B**: Votes "Yes" ✅
+- **Arbitrator C**: Votes "Yes" ✅
+- **Arbitrator D**: Doesn't vote ❌
+- **Arbitrator E**: Doesn't vote ❌
+- **Outcome**: "Yes" wins (3/5 majority)
+
+**Arbitrator fees split:**
+- Only A, B, C receive fees: **Equal split (33.3% each)**
+- D and E get: **0 ETH** (didn't participate)
 
 ## 🚧 Future Enhancements
 
-- **Reputation System**: Track user prediction accuracy over time
+- **Reputation System**: Track arbitrator accuracy and participation rates
 - **Market Categories**: Organize markets by topics (sports, politics, etc.)
+- **Oracle Integration**: Automatic resolution using Chainlink or other oracles
+- **NFT Certificates**: Issue NFTs to winners as proof of prediction accuracy
 - **Social Features**: Market comments and discussion threads
 - **Mobile App**: Native mobile application for iOS and Android
 - **Advanced Analytics**: Detailed market statistics and user insights
+- **Dispute Resolution**: Multi-stage arbitration for contentious outcomes
 
 ## 🤝 Contributing
 

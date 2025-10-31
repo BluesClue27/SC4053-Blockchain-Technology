@@ -4,7 +4,9 @@ const CONTRACT_ABI = [
     // Add your contract ABI here
     "function createMarket(string memory _description, string[] memory _outcomes, uint256 _resolutionTime, address[] memory _arbitrators) external payable returns (uint256)",
     "function placeBet(uint256 _marketId, uint256 _outcome) external payable",
-    "function getMarketInfo(uint256 _marketId) external view returns (tuple(uint256 id, string description, string[] outcomes, uint256 resolutionTime, address creator, address[] arbitrators, bool resolved, uint256 winningOutcome, uint256 totalBets, uint256[] outcomeTotals, uint256 createdAt, uint256 totalVotes, uint256 requiredVotes))",
+    "function getMarketInfo(uint256 _marketId) external view returns (tuple(uint256 id, string description, string[] outcomes, uint256 resolutionTime, address creator, address[] arbitrators, bool resolved, uint256 winningOutcome, uint256 totalBets, uint256[] outcomeTotals, uint256 createdAt, uint256 totalVotes, uint256 requiredVotes, bool isDraw))",
+    "function hasUserWithdrawn(uint256 _marketId, address _user) external view returns (bool)",
+    "function claimArbitratorFee(uint256 _marketId) external",
     "function getAllActiveMarkets() external view returns (uint256[] memory)",
     "function getAllResolvedMarkets() external view returns (uint256[] memory)",
     "function getUserBets(address _user) external view returns (tuple(uint256 marketId, uint256 outcome, uint256 amount, uint256 timestamp)[] memory)",
@@ -336,8 +338,13 @@ function renderMarketCard(market, probabilities, status, userWinnings = null, us
     let isExpired = false;
 
     if (status === 'resolved') {
-        statusClass = 'status-resolved';
-        statusText = `Resolved: ${market.outcomes[market.winningOutcome]}`;
+        if (market.isDraw) {
+            statusClass = 'status-draw';
+            statusText = 'Draw - Bets Refunded';
+        } else {
+            statusClass = 'status-resolved';
+            statusText = `Resolved: ${market.outcomes[market.winningOutcome]}`;
+        }
     } else if (Date.now() > resolutionDate.getTime()) {
         statusClass = 'status-expired';
         statusText = 'Expired';
@@ -413,7 +420,7 @@ function renderMarketCard(market, probabilities, status, userWinnings = null, us
                     <div class="winnings-info">
                         <span class="winnings-label">💰 Your Winnings:</span>
                         <span class="winnings-amount-large">${userWinnings.toFixed(4)} ETH</span>
-                        <span class="winnings-note">(After 2.5% platform fee)</span>
+                        <span class="winnings-note">(After 2.5% total fees: 1.5% platform + 1% arbitrators)</span>
                     </div>
                     <button class="btn btn-success" onclick="withdrawWinnings(${market.id})">Withdraw Winnings</button>
                 </div>
@@ -732,7 +739,7 @@ async function loadMyBets() {
                                             Withdraw Winnings
                                         </button>
                                         <div class="winnings-note">
-                                            (After 2.5% platform fee)
+                                            (After 2.5% total fees: 1.5% platform + 1% arbitrators)
                                         </div>
                                     </div>
                                 </div>
@@ -744,8 +751,8 @@ async function loadMyBets() {
                         <div class="market-card">
                             <div class="market-header">
                                 <div class="market-title">${market.description}</div>
-                                <div class="market-status ${market.resolved ? 'status-resolved' : 'status-active'}">
-                                    ${market.resolved ? `Resolved: ${market.outcomes[market.winningOutcome]}` : 'Active'}
+                                <div class="market-status ${market.resolved ? (market.isDraw ? 'status-draw' : 'status-resolved') : 'status-active'}">
+                                    ${market.resolved ? (market.isDraw ? 'Draw - Bets Refunded' : `Resolved: ${market.outcomes[market.winningOutcome]}`) : 'Active'}
                                 </div>
                             </div>
                             <div class="bets-section">
