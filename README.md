@@ -84,9 +84,10 @@ Configure MetaMask to connect to the local Hardhat network:
 
 Hardhat provides 20 pre-funded test accounts (each with 10,000 ETH). You need to import multiple accounts for testing.
 
-**IMPORTANT:** You need at least **4 accounts** total:
-- 1 account for creating markets and placing bets
+**IMPORTANT:** You need at least **5 accounts** total:
+- 1 account for creating markets 
 - 3 accounts to act as arbitrators (minimum required)
+- 1 account for placing bets
 
 **Quick Import - First Account:**
 
@@ -108,7 +109,7 @@ That document includes:
 - Step-by-step workflow examples
 - Instructions for using accounts as arbitrators or bidders
 
-**Minimum Requirement:** Import at least 3 more accounts (for arbitrators). You can import more if you want to test with multiple bidders or complex scenarios.
+**Minimum Requirement:** Import at least 3 more accounts (for arbitrators). Import at least 1 accoutn (for placing bets)
 
 ### Step 5: Start the Local Environment
 
@@ -136,11 +137,6 @@ PredictionMarket deployed to: 0x5FbDB2315678afecb367f032d93F642f64180aa3
 cd frontend
 python -m http.server 8080
 ```
-Or if using Python 3 specifically:
-```bash
-cd frontend
-python3 -m http.server 8080
-```
 
 Alternative using Node.js (if Python is not available):
 ```bash
@@ -152,7 +148,7 @@ npx http-server frontend -p 8080
 1. Open your web browser
 2. Navigate to `http://localhost:8080`
 3. MetaMask should prompt you to connect
-4. **Switch MetaMask network to "Localhost 8545"** (important!)
+4. **Switch MetaMask network to "Localhost 8545"**
 5. Click "Connect Wallet" button in the application
 6. Approve the connection in MetaMask
 
@@ -169,7 +165,7 @@ You should now see:
 2. Fill in the form:
    - **Description:** "Will it rain tomorrow?"
    - **Outcomes:** Add at least two outcomes (e.g., "Yes", "No")
-   - **Resolution Time:** Select a date/time at least 1 hour in the future
+   - **Resolution Time:** Select a date/time at least 1 minute in the future
    - **Arbitrator Addresses:** Add 3 or more arbitrator addresses
      - Example: Use addresses from Accounts #1, #2, #3 (see [TEST_ACCOUNTS.md](./TEST_ACCOUNTS.md))
      - Can have up to 21 arbitrators
