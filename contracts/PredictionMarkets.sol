@@ -257,38 +257,6 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         }
     }
 
-    // Legacy function name for backwards compatibility - calls voteOnOutcome
-    function resolveMarket(uint256 _marketId, uint256 _winningOutcome)
-        external
-        validMarket(_marketId)
-        marketNotResolved(_marketId)
-        onlyArbitrator(_marketId)
-    {
-        Market storage market = markets[_marketId];
-        require(block.timestamp >= market.resolutionTime, "Market not yet resolvable");
-        require(_winningOutcome < market.outcomes.length, "Invalid outcome");
-        require(!market.hasVoted[msg.sender], "Already voted");
-
-        // Record the vote
-        market.hasVoted[msg.sender] = true;
-        market.arbitratorVote[msg.sender] = _winningOutcome; // Record what they voted for
-        market.outcomeVotes[_winningOutcome]++;
-        market.totalVotes++;
-
-        emit ArbitratorVoted(_marketId, msg.sender, _winningOutcome);
-
-        // Check if we have enough votes to resolve
-        if (market.outcomeVotes[_winningOutcome] >= market.requiredVotes) {
-            market.resolved = true;
-            market.winningOutcome = _winningOutcome;
-            market.isDraw = false;
-            emit MarketResolved(_marketId, _winningOutcome, market.outcomeTotals[_winningOutcome]);
-        } else if (market.totalVotes == market.arbitrators.length) {
-            // All arbitrators have voted, check for draw
-            _checkForDraw(_marketId);
-        }
-    }
-
     function _checkForDraw(uint256 _marketId) internal {
         Market storage market = markets[_marketId];
 

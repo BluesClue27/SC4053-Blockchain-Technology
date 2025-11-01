@@ -587,6 +587,19 @@ body {
     color: #721c24;
 }
 
+.losing-reason {
+    font-size: 1rem;
+    color: #721c24;
+    text-align: center;
+}
+
+.losing-details {
+    font-size: 0.9rem;
+    color: #856404;
+    font-style: italic;
+    text-align: center;
+}
+
 .withdrawn-section {
     margin-top: 25px;
     padding: 20px;

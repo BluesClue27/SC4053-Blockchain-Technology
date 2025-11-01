@@ -109,7 +109,7 @@ That document includes:
 - Step-by-step workflow examples
 - Instructions for using accounts as arbitrators or bidders
 
-**Minimum Requirement:** Import at least 3 more accounts (for arbitrators). Import at least 1 accoutn (for placing bets)
+**Minimum Requirement:** Import at least 4 more accounts (3 for arbitrators, 1 for placing bets)
 
 ### Step 5: Start the Local Environment
 
@@ -217,9 +217,6 @@ When you're done testing:
 - **Winnings Distribution**: Winners can withdraw their proportional share of the total bet pool
 - **Market Discovery**: Browse active and resolved markets with real-time probability calculations
 - **Fee Distribution**: 2.5% total fees split between platform (1.5%) and arbitrators (1%)
-
-### Advanced Features
-
 - **Fair Arbitrator Compensation**: Only arbitrators who voted correctly receive fees
 - **Byzantine Fault Tolerance**: Markets resolve with simple majority, preventing single point of failure
 - **Consolidated Bet Display**: Multiple bets on same outcome are automatically grouped
@@ -358,7 +355,6 @@ Key parameters in the PredictionMarket contract:
    - For draws: All arbitrators who **voted** (any outcome)
    - Non-voters receive nothing
 3. Fees are split equally among eligible arbitrators
-4. Each arbitrator must claim their own fees by calling `claimArbitratorFee(marketId)`
 
 ### Understanding Arbitrator Fees
 
@@ -375,52 +371,46 @@ Key parameters in the PredictionMarket contract:
 | **Draw** | All arbitrators who voted (any outcome) | Equal split among all voters |
 | **No Vote** | No fees earned | N/A |
 
-**Example:**
-- Market with 5 arbitrators resolves normally
-- Total arbitrator fees collected: 1 ETH
-- 3 arbitrators voted correctly → Each gets 0.333 ETH
-- 2 arbitrators voted wrong or didn't vote → Get 0 ETH
-
-**Frontend Display:**
-Arbitrators see real-time information on resolved markets:
-- ✅ **Eligible & Unclaimed**: Shows fee amount + "Claim" button
-- ✅ **Eligible & Claimed**: Shows checkmark + amount claimed
-- ❌ **Not Eligible**: Explains why (didn't vote or voted incorrectly)
-
 ## 📜 Smart Contract Functions
 
-### Public Functions
+### State-Changing Functions
 
-| Function                    | Description                                          | Access            |
-| --------------------------- | ---------------------------------------------------- | ----------------- |
-| `createMarket()`            | Create a new prediction market with multiple arbitrators | Anyone (with fee) |
-| `placeBet()`                | Place a bet on market outcome                        | Anyone (except creator/arbitrators) |
-| `voteOnOutcome()`           | Vote on winning outcome (arbitrator function)        | Arbitrators only  |
-| `resolveMarket()`           | Legacy vote function (same as voteOnOutcome)         | Arbitrators only  |
-| `withdrawWinnings()`        | Withdraw winnings or refund after resolution         | Bettors only      |
-| `claimArbitratorFee()`      | Claim arbitrator fee share                           | Eligible arbitrators only |
-| `getMarketInfo()`           | Get complete market information including draw status | Anyone           |
-| `getOutcomeProbabilities()` | Get current market probabilities                     | Anyone            |
-| `hasUserWithdrawn()`        | Check if user has withdrawn from market              | Anyone            |
+| Function                    | Description                                          | Access Restrictions            |
+| --------------------------- | ---------------------------------------------------- | ------------------------------ |
+| `createMarket()`            | Create a new prediction market with multiple arbitrators | Requires 0.001 ETH minimum fee |
+| `placeBet()`                | Place a bet on market outcome                        | Cannot be creator or arbitrator of market |
+| `voteOnOutcome()`           | Vote on winning outcome after resolution time        | Designated arbitrators only    |
+| `withdrawWinnings()`        | Withdraw winnings or refund after market resolves    | Users with winning/refundable bets only |
+| `claimArbitratorFee()`      | Claim arbitrator fee share after market resolves     | Eligible arbitrators only (voted correctly or any vote in draw) |
 
-### View Functions
+### View Functions (Read-Only)
 
-| Function                     | Description                                          |
-| ---------------------------- | ---------------------------------------------------- |
-| `getAllActiveMarkets()`      | Get IDs of all active markets                        |
-| `getAllResolvedMarkets()`    | Get IDs of all resolved markets                      |
-| `getUserBets()`              | Get all bets placed by a user                        |
-| `getUserBetAmount()`         | Get user's bet amount for specific outcome           |
-| `getUserMarkets()`           | Get all markets created by a user                    |
-| `hasArbitratorVoted()`       | Check if specific arbitrator has voted               |
-| `getArbitratorFeeInfo()`     | Get comprehensive fee info for an arbitrator         |
-| `getArbitratorVoteDetails()` | Get voting details for all arbitrators in a market   |
+| Function                     | Description                                          | Returns |
+| ---------------------------- | ---------------------------------------------------- | ------- |
+| `getMarketInfo()`           | Get complete market details including draw status    | MarketInfo struct |
+| `getOutcomeProbabilities()` | Get current probability percentages for all outcomes | uint256[] (basis points) |
+| `getAllActiveMarkets()`      | Get IDs of all unresolved markets                   | uint256[] market IDs |
+| `getAllResolvedMarkets()`    | Get IDs of all resolved markets                     | uint256[] market IDs |
+| `getUserBets()`              | Get all bets placed by specific user                | UserBet[] struct array |
+| `getUserBetAmount()`         | Get user's total bet amount for specific outcome    | uint256 (wei) |
+| `getUserMarkets()`           | Get all markets created by specific user            | uint256[] market IDs |
+| `hasArbitratorVoted()`       | Check if arbitrator has cast their vote             | bool |
+| `hasUserWithdrawn()`        | Check if user has withdrawn from market             | bool |
+| `getArbitratorFeeInfo()`     | Get comprehensive arbitrator fee information        | Multiple return values |
+| `getArbitratorVoteDetails()` | Get voting status for all arbitrators in market     | Multiple arrays |
+
+### Owner-Only Functions
+
+| Function                | Description                                          | Access |
+| ----------------------- | ---------------------------------------------------- | ------ |
+| `setPlatformFee()`      | Update platform fee percentage (max 10%)            | Contract owner only |
+| `setArbitratorFee()`    | Update arbitrator fee percentage (max 5%)           | Contract owner only |
+| `emergencyWithdraw()`   | Emergency withdrawal of contract balance            | Contract owner only |
 
 ## 🖥 Frontend Features
 
 ### Modern UI/UX
 
-- **Responsive Design**: Works on desktop and mobile devices
 - **Real-time Updates**: Live probability calculations and bet tracking
 - **Wallet Integration**: Seamless MetaMask connection
 
@@ -504,10 +494,6 @@ Arbitrators see real-time information on resolved markets:
 - Split between A and B only: **0.5 ETH each**
 - Arbitrator C gets: **0 ETH** (voted wrong)
 
-**Frontend Display:**
-- Arbitrators A & B see: "✅ Arbitrator Fee Available: 0.5 ETH" + Claim button
-- Arbitrator C sees: "❌ Not Eligible - You voted for 'No' but winning outcome was 'Yes'"
-
 ### Example 2: Draw (4 Arbitrators, 2-2 Tie)
 - **Market**: "Will candidate win election?"
 - **Total Pool**: 200 ETH
@@ -528,11 +514,6 @@ Arbitrators see real-time information on resolved markets:
 - Split among ALL who voted (A, B, C, D): **0.5 ETH each**
 - Non-voters get: **0 ETH**
 
-**Frontend Display:**
-- All voting arbitrators (A, B, C, D) see: "✅ Arbitrator Fee Available (Market Draw): 0.5 ETH"
-- Message: "Market ended in a draw. All arbitrators who voted share fees equally."
-- Bettors see: "🔄 Market Draw - Refund Available: 9.75 ETH" + Withdraw Refund button
-
 ### Example 3: Low Participation (5 Arbitrators, Only 3 Vote)
 - **Total Pool**: 150 ETH
 - **Arbitrator A**: Votes "Yes" ✅
@@ -546,10 +527,6 @@ Arbitrators see real-time information on resolved markets:
 - Total arbitrator fees collected: 1.5 ETH (1% of 150 ETH)
 - Only A, B, C receive fees: **0.5 ETH each (equal split)**
 - D and E get: **0 ETH** (didn't participate)
-
-**Frontend Display:**
-- Arbitrators A, B, C see: "✅ Arbitrator Fee Available: 0.5 ETH" + Claim button
-- Arbitrators D, E see: "❌ Not Eligible - You did not vote on this market"
 
 ## 🚧 Future Enhancements
 
