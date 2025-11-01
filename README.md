@@ -6,14 +6,16 @@ A decentralized prediction market platform built on Ethereum that allows users t
 
 - [Quick Start](#-quick-start)
 - [First-Time Setup Guide](#-first-time-setup-guide)
-- [Features](#features)
-- [Project Structure](#project-structure)
-- [Configuration](#configuration)
+- [Features](#-features)
+- [Project Structure](#-project-structure)
+- [Configuration](#-configuration)
 - [Troubleshooting](#-troubleshooting)
-- [Usage](#usage)
-- [Smart Contract Functions](#smart-contract-functions)
-- [Frontend Features](#frontend-features)
-- [Security Features](#security-features)
+- [Usage](#-usage)
+- [Smart Contract Functions](#-smart-contract-functions)
+- [Frontend Features](#-frontend-features)
+- [Security Features](#-security-features)
+- [Future Enhancements](#-future-enhancements)
+- [References](#-references)
 
 ## 🏃 Quick Start
 
@@ -538,14 +540,6 @@ Key parameters in the PredictionMarket contract:
 - **Mobile App**: Native mobile application for iOS and Android
 - **Advanced Analytics**: Detailed market statistics and user insights
 - **Dispute Resolution**: Multi-stage arbitration for contentious outcomes
-
-## 🤝 Contributing
-
-This project is developed for academic purposes as part of the SC4053/CE4153/CZ4153 Blockchain Technology course at NTU.
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## 📚 References
 
