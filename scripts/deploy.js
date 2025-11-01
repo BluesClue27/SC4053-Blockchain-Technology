@@ -4,7 +4,7 @@ async function main() {
     console.log("Deploying PredictionMarket contract...");
 
     // Get all signers (deployer + arbitrators)
-    const [deployer, acc1, acc2, acc3] = await hre.ethers.getSigners();
+    const [deployer, acc1, acc2, acc3, acc4] = await hre.ethers.getSigners();
     console.log("Deploying contracts with the account:", deployer.address);
     console.log("Account balance:", hre.ethers.formatEther(await hre.ethers.provider.getBalance(deployer.address)));
 
@@ -37,16 +37,16 @@ async function main() {
     console.log("\nCreating sample market...");
     const resolutionTime = Math.floor(Date.now() / 1000) + (60 * 5); // 5 mins from now
 
-    // Use accounts 1, 2, 3 as arbitrators (not the deployer)
-    const arbitrators = [acc1.address, acc2.address, acc3.address];
+    // Use accounts 1, 2, 3, 4 as arbitrators (not the deployer)
+    const arbitrators = [acc1.address, acc2.address, acc3.address, acc4.address];
 
     console.log("Using arbitrators:", arbitrators);
 
     const tx = await predictionMarket.createMarket(
         "Will Bitcoin reach $100,000 by the end of 2025?",
-        ["Yes", "No"],
+        ["Yes", "No", "Uncertain"],
         resolutionTime,
-        arbitrators, // Use multiple arbitrators
+        arbitrators, 
         { value: hre.ethers.parseEther("0.001") }
     );
 
@@ -89,9 +89,9 @@ async function main() {
         `const CONTRACT_ADDRESS = '${contractAddress}'`
     );
 
-    fs.writeFileSync(frontendPath, frontendCode);
-    console.log("✅ Frontend updated with new contract address!");
-    console.log("\n⚠️  IMPORTANT: Hard refresh your browser (Ctrl+Shift+R) to clear cache!");
+    // fs.writeFileSync(frontendPath, frontendCode);
+    // console.log("✅ Frontend updated with new contract address!");
+    // console.log("\n⚠️  IMPORTANT: Hard refresh your browser (Ctrl+Shift+R) to clear cache!");
 }
 
 main()
