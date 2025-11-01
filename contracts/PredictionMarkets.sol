@@ -250,6 +250,11 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
             market.resolved = true;
             market.winningOutcome = _outcome;
             market.isDraw = false;
+
+            // Calculate and set arbitrator fees immediately upon resolution
+            uint256 totalArbitratorFees = (market.totalBets * arbitratorFee) / 10000;
+            market.collectedArbitratorFees = totalArbitratorFees;
+
             emit MarketResolved(_marketId, _outcome, market.outcomeTotals[_outcome]);
         } else if (market.totalVotes == market.arbitrators.length) {
             // All arbitrators have voted, check for draw
@@ -280,6 +285,11 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
             market.resolved = true;
             market.isDraw = true;
             market.winningOutcome = 0; // Doesn't matter for draws
+
+            // Calculate and set arbitrator fees immediately upon resolution (draw scenario)
+            uint256 totalArbitratorFees = (market.totalBets * arbitratorFee) / 10000;
+            market.collectedArbitratorFees = totalArbitratorFees;
+
             emit MarketResolved(_marketId, 0, 0); // 0 indicates draw
         }
     }
@@ -306,11 +316,8 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
             // Deduct fees from refund
             uint256 refund = (totalUserBets * (10000 - platformFee - arbitratorFee)) / 10000;
 
-            // Collect fees
+            // Collect platform fee (arbitrator fee already calculated at resolution)
             uint256 drawPlatformCut = (totalUserBets * platformFee) / 10000;
-            uint256 drawArbitratorCut = (totalUserBets * arbitratorFee) / 10000;
-
-            market.collectedArbitratorFees += drawArbitratorCut;
 
             payable(msg.sender).transfer(refund);
             if (drawPlatformCut > 0) {
@@ -334,11 +341,8 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         // Deduct platform and arbitrator fees
         uint256 payout = (winnings * (10000 - platformFee - arbitratorFee)) / 10000;
 
-        // Collect fees
+        // Collect platform fee (arbitrator fee already calculated at resolution)
         uint256 platformCut = (winnings * platformFee) / 10000;
-        uint256 arbitratorCut = (winnings * arbitratorFee) / 10000;
-
-        market.collectedArbitratorFees += arbitratorCut;
 
         payable(msg.sender).transfer(payout);
         if (platformCut > 0) {
