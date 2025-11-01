@@ -14,7 +14,7 @@ This document contains pre-funded test accounts provided by Hardhat for local de
 ## Important Notes
 
 - **Arbitrators:** You need to select at least **3 accounts** to act as arbitrators when creating a market
-- **Bidders:** You can use any accounts (including arbitrators) to place bets on markets
+- **Bidders:** You can use any accounts to place bets on markets. However creators and arbitrators cannot bet in the market they are appointed as arbitrators
 - **Market Creator:** Any account can create a market (requires 0.001 ETH creation fee)
 - All accounts are reset when you restart the local blockchain (`npm run node`)
 
@@ -159,90 +159,6 @@ Address: 0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199
 Private Key: 0xdf57089febbacf7ba0bc227dafbffa9fc08a93fdc68e1e42411a14efcf23656e
 Balance: 10,000 ETH
 ```
-
-## Recommended Testing Setup
-
-### Scenario 1: Basic Testing
-- **Market Creator:** Account #0
-- **Arbitrators (3 required):** Accounts #1, #2, #3
-- **Bidders:** Accounts #4, #5, #6, #7, #8, #9
-
-### Scenario 2: Multiple Markets
-- **Market Creator 1:** Account #0
-- **Market Creator 2:** Account #1
-- **Arbitrators (3 required):** Accounts #10, #11, #12
-- **Bidders:** Accounts #2, #3, #4, #5, #6, #7, #8, #9
-
-### Scenario 3: Complex Testing (Multiple Markets & Arbitrators)
-- **Market Creators:** Accounts #0, #1, #2, #3
-- **Arbitrator Set 1:** Accounts #10, #11, #12
-- **Arbitrator Set 2:** Accounts #13, #14, #15
-- **Bidders:** Accounts #4, #5, #6, #7, #8, #9, #16, #17, #18, #19
-
-### Scenario 4: Large-Scale Testing
-- **Market Creators:** Accounts #0, #1, #2, #3, #4
-- **Arbitrators (3 required per market):** Accounts #10-#19 (can assign different sets)
-- **Bidders:** Any combination of accounts #5-#19
-
-## Testing Workflow Example
-
-1. **Import Accounts:**
-   - Import at least 4 accounts (1 creator + 3 arbitrators minimum)
-   - Optionally import more accounts for bidders
-
-2. **Create a Market:**
-   - Switch to Account #0 in MetaMask
-   - Go to "Create Market" tab
-   - Fill in market details
-   - Add at least 3 arbitrator addresses (e.g., Accounts #1, #2, #3)
-   - Pay 0.001 ETH creation fee
-   - Submit transaction
-
-3. **Place Bets:**
-   - Switch to different accounts in MetaMask (e.g., Accounts #4, #5, #6)
-   - Browse to the market you created
-   - Place bets on different outcomes
-   - Each account can bet different amounts
-
-4. **Resolve Market:**
-   - Wait until after the resolution time
-   - Switch to one of the arbitrator accounts (e.g., Account #1)
-   - The arbitrators will vote on the winning outcome
-   - Once consensus is reached, the market resolves
-
-5. **Withdraw Winnings:**
-   - Switch to an account that bet on the winning outcome
-   - Click "Withdraw Winnings" button
-   - Receive your proportional share of the pot (minus 2.5% platform fee)
-
-## Security Notes
-
-**⚠️ IMPORTANT - FOR LOCAL TESTING ONLY**
-
-- These private keys are publicly known and should **NEVER** be used on mainnet or public testnets
-- These accounts are only for local Hardhat development
-- Do not send real ETH or tokens to these addresses
-- Anyone with access to these private keys can control these accounts
-
-## Troubleshooting
-
-### "Nonce too high" error
-When you restart the local blockchain, MetaMask's transaction history becomes outdated:
-1. Open MetaMask → Settings → Advanced
-2. Click "Clear activity tab data" or "Reset Account"
-3. This resets the nonce for all accounts
-
-### Account balance shows 0 ETH
-Make sure:
-1. The local blockchain is running (`npm run node`)
-2. MetaMask is connected to "Localhost 8545" network (Chain ID: 31337)
-3. You've imported the account using the correct private key
-
-### Cannot import account
-If you see "This account has already been imported":
-- You've already imported this account
-- Check your MetaMask account list
-- Switch between accounts using the account dropdown
 
 ## Additional Resources
 
