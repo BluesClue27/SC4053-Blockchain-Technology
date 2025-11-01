@@ -364,6 +364,33 @@ Key parameters in the PredictionMarket contract:
 3. Fees are split equally among eligible arbitrators
 4. Each arbitrator must claim their own fees by calling `claimArbitratorFee(marketId)`
 
+### Understanding Arbitrator Fees
+
+**How Fees Are Collected:**
+- 1% of every winning payout goes to the arbitrator fee pool
+- In draw scenarios, 1% of every refund contributes to the pool
+- Total collected fees are displayed transparently on resolved markets
+
+**Fee Distribution Rules:**
+
+| Scenario | Who Gets Fees | Split Method |
+|----------|--------------|--------------|
+| **Normal Win** | Only arbitrators who voted for winning outcome | Equal split among correct voters |
+| **Draw** | All arbitrators who voted (any outcome) | Equal split among all voters |
+| **No Vote** | No fees earned | N/A |
+
+**Example:**
+- Market with 5 arbitrators resolves normally
+- Total arbitrator fees collected: 1 ETH
+- 3 arbitrators voted correctly → Each gets 0.333 ETH
+- 2 arbitrators voted wrong or didn't vote → Get 0 ETH
+
+**Frontend Display:**
+Arbitrators see real-time information on resolved markets:
+- ✅ **Eligible & Unclaimed**: Shows fee amount + "Claim" button
+- ✅ **Eligible & Claimed**: Shows checkmark + amount claimed
+- ❌ **Not Eligible**: Explains why (didn't vote or voted incorrectly)
+
 ## 📜 Smart Contract Functions
 
 ### Public Functions
@@ -382,14 +409,16 @@ Key parameters in the PredictionMarket contract:
 
 ### View Functions
 
-| Function                  | Description                                |
-| ------------------------- | ------------------------------------------ |
-| `getAllActiveMarkets()`   | Get IDs of all active markets              |
-| `getAllResolvedMarkets()` | Get IDs of all resolved markets            |
-| `getUserBets()`           | Get all bets placed by a user              |
-| `getUserBetAmount()`      | Get user's bet amount for specific outcome |
-| `getUserMarkets()`        | Get all markets created by a user          |
-| `hasArbitratorVoted()`    | Check if specific arbitrator has voted     |
+| Function                     | Description                                          |
+| ---------------------------- | ---------------------------------------------------- |
+| `getAllActiveMarkets()`      | Get IDs of all active markets                        |
+| `getAllResolvedMarkets()`    | Get IDs of all resolved markets                      |
+| `getUserBets()`              | Get all bets placed by a user                        |
+| `getUserBetAmount()`         | Get user's bet amount for specific outcome           |
+| `getUserMarkets()`           | Get all markets created by a user                    |
+| `hasArbitratorVoted()`       | Check if specific arbitrator has voted               |
+| `getArbitratorFeeInfo()`     | Get comprehensive fee info for an arbitrator         |
+| `getArbitratorVoteDetails()` | Get voting details for all arbitrators in a market   |
 
 ## 🖥 Frontend Features
 
@@ -403,8 +432,24 @@ Key parameters in the PredictionMarket contract:
 
 - **Market Cards**: Clean, organized display of market information
 - **Probability Bars**: Visual representation of outcome probabilities
-- **Status Indicators**: Clear indication of market status (active/resolved/expired)
+- **Status Indicators**: Clear indication of market status (active/resolved/expired/draw)
 - **Time Display**: Human-readable creation and resolution times
+- **Draw Indicators**: Visual notification when markets end in a tie
+
+### Arbitrator Features
+
+- **Fee Transparency**: Real-time display of arbitrator fee eligibility and amounts
+- **Voting Status**: Shows which arbitrators have voted and their choices
+- **Fee Claiming**: One-click interface to claim arbitrator fees
+- **Eligibility Tracking**: Clear indication of why arbitrators are/aren't eligible for fees
+- **Draw Handling**: Special UI for draw scenarios where all voters share fees
+
+### Bettor Features
+
+- **Winnings Calculator**: Real-time calculation of potential payouts
+- **Refund Display**: Clear indication of refund amounts in draw scenarios
+- **Withdrawal Tracking**: Shows whether winnings/refunds have been claimed
+- **Fee Breakdown**: Transparent display of platform and arbitrator fees
 
 ### User Experience
 
@@ -412,6 +457,7 @@ Key parameters in the PredictionMarket contract:
 - **Form Validation**: Client-side validation for all inputs
 - **Error Handling**: Clear error messages and success notifications
 - **Transaction Tracking**: Real-time transaction status updates
+- **Visual Feedback**: Color-coded sections for different states (unclaimed/claimed/ineligible)
 
 ## 🔐 Security Features
 
@@ -457,17 +503,22 @@ Key parameters in the PredictionMarket contract:
 - **Net payout: 48.75 ETH**
 
 **Arbitrator fees:**
-- Total arbitrator fees collected: 0.5 ETH
-- Split between A and B only: **0.25 ETH each**
+- Total arbitrator fees collected: 1 ETH (1% of 100 ETH total pool)
+- Eligible arbitrators: A and B (voted correctly)
+- Split between A and B only: **0.5 ETH each**
 - Arbitrator C gets: **0 ETH** (voted wrong)
+
+**Frontend Display:**
+- Arbitrators A & B see: "✅ Arbitrator Fee Available: 0.5 ETH" + Claim button
+- Arbitrator C sees: "❌ Not Eligible - You voted for 'No' but winning outcome was 'Yes'"
 
 ### Example 2: Draw (4 Arbitrators, 2-2 Tie)
 - **Market**: "Will candidate win election?"
 - **Total Pool**: 200 ETH
-- **Arbitrator A**: Votes "Yes"
-- **Arbitrator B**: Votes "Yes"
-- **Arbitrator C**: Votes "No"
-- **Arbitrator D**: Votes "No"
+- **Arbitrator A**: Votes "Yes" ✅
+- **Arbitrator B**: Votes "Yes" ✅
+- **Arbitrator C**: Votes "No" ✅
+- **Arbitrator D**: Votes "No" ✅
 - **Outcome**: **DRAW** (no majority)
 
 **All bettors receive refund:**
@@ -477,11 +528,17 @@ Key parameters in the PredictionMarket contract:
 - **Refund: 9.75 ETH**
 
 **Arbitrator fees:**
-- Total arbitrator fees: ~2 ETH (1% of 200 ETH)
+- Total arbitrator fees: 2 ETH (1% of 200 ETH)
 - Split among ALL who voted (A, B, C, D): **0.5 ETH each**
 - Non-voters get: **0 ETH**
 
+**Frontend Display:**
+- All voting arbitrators (A, B, C, D) see: "✅ Arbitrator Fee Available (Market Draw): 0.5 ETH"
+- Message: "Market ended in a draw. All arbitrators who voted share fees equally."
+- Bettors see: "🔄 Market Draw - Refund Available: 9.75 ETH" + Withdraw Refund button
+
 ### Example 3: Low Participation (5 Arbitrators, Only 3 Vote)
+- **Total Pool**: 150 ETH
 - **Arbitrator A**: Votes "Yes" ✅
 - **Arbitrator B**: Votes "Yes" ✅
 - **Arbitrator C**: Votes "Yes" ✅
@@ -490,8 +547,13 @@ Key parameters in the PredictionMarket contract:
 - **Outcome**: "Yes" wins (3/5 majority)
 
 **Arbitrator fees split:**
-- Only A, B, C receive fees: **Equal split (33.3% each)**
+- Total arbitrator fees collected: 1.5 ETH (1% of 150 ETH)
+- Only A, B, C receive fees: **0.5 ETH each (equal split)**
 - D and E get: **0 ETH** (didn't participate)
+
+**Frontend Display:**
+- Arbitrators A, B, C see: "✅ Arbitrator Fee Available: 0.5 ETH" + Claim button
+- Arbitrators D, E see: "❌ Not Eligible - You did not vote on this market"
 
 ## 🚧 Future Enhancements
 
