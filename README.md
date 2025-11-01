@@ -33,51 +33,6 @@ A decentralized prediction market platform built on Ethereum that allows users t
 
 See [First-Time Setup Guide](#-first-time-setup-guide) below for detailed step-by-step instructions.
 
-## ✨ Features
-
-### Core Features
-
-- **Market Creation**: Users can create new prediction markets with custom descriptions, outcomes, and resolution times
-- **Multi-Arbitrator System**: Markets require 3-21 arbitrators for decentralized resolution
-- **Voting Mechanism**: Arbitrators vote on outcomes with simple majority consensus
-- **Betting System**: Users can place bets on different outcomes using ETH
-- **Draw Handling**: Automatic bet refunds (minus fees) when arbitrator votes tie
-- **Winnings Distribution**: Winners can withdraw their proportional share of the total bet pool
-- **Market Discovery**: Browse active and resolved markets with real-time probability calculations
-- **Fee Distribution**: 2.5% total fees split between platform (1.5%) and arbitrators (1%)
-
-### Advanced Features
-
-- **Fair Arbitrator Compensation**: Only arbitrators who voted correctly receive fees
-- **Byzantine Fault Tolerance**: Markets resolve with simple majority, preventing single point of failure
-- **Consolidated Bet Display**: Multiple bets on same outcome are automatically grouped
-- **Potential Earnings Calculator**: Real-time calculation of potential payouts for active markets
-- **Withdrawal Tracking**: System tracks and prevents double-withdrawals
-- **Dynamic Pricing**: Market probabilities reflect betting volumes in real-time
-
-## 🏗 Project Structure
-
-```
-prediction-market-dapp/
-├── contracts/
-│   └── PredictionMarket.sol       # Main smart contract
-├── scripts/
-│   └── deploy.js                  # Deployment script
-├── frontend/
-│   ├── index.html                 # Main web interface
-│   ├── css/
-│   │   └── styles.css             # Application styles
-│   └── js/
-│       └── app.js                 # Frontend JavaScript logic
-├── artifacts/                      # Compiled contract artifacts
-├── cache/                          # Hardhat cache
-├── hardhat.config.js              # Hardhat configuration
-├── package.json                   # Dependencies and scripts
-├── deployment.json                # Deployed contract addresses
-├── TEST_ACCOUNTS.md               # Test account addresses and private keys (20 accounts)
-└── README.md                      # This file
-```
-
 ## 🚀 First-Time Setup Guide
 
 ### Step 1: Prerequisites Installation
@@ -253,6 +208,51 @@ When you're done testing:
    - Open MetaMask → Settings → Advanced
    - Click "Clear activity tab data" or "Reset Account"
    - This clears the transaction history for the new blockchain instance
+
+## ✨ Features
+
+### Core Features
+
+- **Market Creation**: Users can create new prediction markets with custom descriptions, outcomes, and resolution times
+- **Multi-Arbitrator System**: Markets require 3-21 arbitrators for decentralized resolution
+- **Voting Mechanism**: Arbitrators vote on outcomes with simple majority consensus
+- **Betting System**: Users can place bets on different outcomes using ETH
+- **Draw Handling**: Automatic bet refunds (minus fees) when arbitrator votes tie
+- **Winnings Distribution**: Winners can withdraw their proportional share of the total bet pool
+- **Market Discovery**: Browse active and resolved markets with real-time probability calculations
+- **Fee Distribution**: 2.5% total fees split between platform (1.5%) and arbitrators (1%)
+
+### Advanced Features
+
+- **Fair Arbitrator Compensation**: Only arbitrators who voted correctly receive fees
+- **Byzantine Fault Tolerance**: Markets resolve with simple majority, preventing single point of failure
+- **Consolidated Bet Display**: Multiple bets on same outcome are automatically grouped
+- **Potential Earnings Calculator**: Real-time calculation of potential payouts for active markets
+- **Withdrawal Tracking**: System tracks and prevents double-withdrawals
+- **Dynamic Pricing**: Market probabilities reflect betting volumes in real-time
+
+## 🏗 Project Structure
+
+```
+prediction-market-dapp/
+├── contracts/
+│   └── PredictionMarket.sol       # Main smart contract
+├── scripts/
+│   └── deploy.js                  # Deployment script
+├── frontend/
+│   ├── index.html                 # Main web interface
+│   ├── css/
+│   │   └── styles.css             # Application styles
+│   └── js/
+│       └── app.js                 # Frontend JavaScript logic
+├── artifacts/                      # Compiled contract artifacts
+├── cache/                          # Hardhat cache
+├── hardhat.config.js              # Hardhat configuration
+├── package.json                   # Dependencies and scripts
+├── deployment.json                # Deployed contract addresses
+├── TEST_ACCOUNTS.md               # Test account addresses and private keys (20 accounts)
+└── README.md                      # This file
+```
 
 ## ⚙️ Configuration
 
