@@ -535,6 +535,61 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         return markets[_marketId].hasWithdrawn[_user];
     }
 
+    function getArbitratorFeeInfo(uint256 _marketId, address _arbitrator)
+        external
+        view
+        validMarket(_marketId)
+        returns (
+            bool isArbitrator,
+            bool hasVoted,
+            uint256 votedOutcome,
+            bool isEligible,
+            uint256 potentialShare,
+            bool hasClaimed,
+            uint256 totalCollectedFees,
+            uint256 eligibleCount
+        )
+    {
+        Market storage market = markets[_marketId];
+
+        isArbitrator = _isArbitrator(_marketId, _arbitrator);
+        hasVoted = market.hasVoted[_arbitrator];
+        votedOutcome = hasVoted ? market.arbitratorVote[_arbitrator] : 0;
+        isEligible = market.resolved && _isEligibleForFee(_marketId, _arbitrator);
+        hasClaimed = market.arbitratorFeeClaimed[_arbitrator];
+        totalCollectedFees = market.collectedArbitratorFees;
+        eligibleCount = market.resolved ? _countEligibleArbitrators(_marketId) : 0;
+        potentialShare = (isEligible && eligibleCount > 0) ? totalCollectedFees / eligibleCount : 0;
+    }
+
+    function getArbitratorVoteDetails(uint256 _marketId)
+        external
+        view
+        validMarket(_marketId)
+        returns (
+            address[] memory arbitrators,
+            bool[] memory hasVoted,
+            uint256[] memory votes,
+            bool[] memory isEligible
+        )
+    {
+        Market storage market = markets[_marketId];
+        uint256 arbCount = market.arbitrators.length;
+
+        arbitrators = new address[](arbCount);
+        hasVoted = new bool[](arbCount);
+        votes = new uint256[](arbCount);
+        isEligible = new bool[](arbCount);
+
+        for (uint256 i = 0; i < arbCount; i++) {
+            address arb = market.arbitrators[i];
+            arbitrators[i] = arb;
+            hasVoted[i] = market.hasVoted[arb];
+            votes[i] = hasVoted[i] ? market.arbitratorVote[arb] : 0;
+            isEligible[i] = market.resolved && _isEligibleForFee(_marketId, arb);
+        }
+    }
+
     function getAllActiveMarkets() external view returns (uint256[] memory activeMarkets) {
         uint256 activeCount = 0;
 

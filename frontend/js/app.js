@@ -15,7 +15,9 @@ const CONTRACT_ABI = [
     "function hasArbitratorVoted(uint256 _marketId, address _arbitrator) external view returns (bool)",
     "function withdrawWinnings(uint256 _marketId) external",
     "function voteOnOutcome(uint256 _marketId, uint256 _outcome) external",
-    "function resolveMarket(uint256 _marketId, uint256 _winningOutcome) external"
+    "function resolveMarket(uint256 _marketId, uint256 _winningOutcome) external",
+    "function getArbitratorFeeInfo(uint256 _marketId, address _arbitrator) external view returns (bool isArbitrator, bool hasVoted, uint256 votedOutcome, bool isEligible, uint256 potentialShare, bool hasClaimed, uint256 totalCollectedFees, uint256 eligibleCount)",
+    "function getArbitratorVoteDetails(uint256 _marketId) external view returns (address[] arbitrators, bool[] hasVoted, uint256[] votes, bool[] isEligible)"
 ];
 
 let provider, signer, contract, userAddress;
@@ -289,35 +291,60 @@ async function loadResolvedMarkets() {
                 let userWinnings = null;
                 let userHasLost = false;
                 let userHasWithdrawn = false;
-                if (userAddress && market.resolved) {
-                    const userBetAmount = await contract.getUserBetAmount(id, userAddress, market.winningOutcome);
-                    if (userBetAmount.gt(0)) {
-                        // Check if user has already withdrawn
-                        userHasWithdrawn = await contract.hasUserWithdrawn(id, userAddress);
+                let arbitratorFeeInfo = null;
 
-                        // Calculate potential winnings
-                        const userBetEth = parseFloat(ethers.utils.formatEther(userBetAmount));
-                        const winningPool = parseFloat(ethers.utils.formatEther(market.outcomeTotals[market.winningOutcome]));
-                        const totalPool = parseFloat(ethers.utils.formatEther(market.totalBets));
-                        const grossWinnings = (userBetEth * totalPool) / winningPool;
-                        const platformFee = 250; // 2.5% in basis points
-                        const fee = (grossWinnings * platformFee) / 10000;
-                        userWinnings = grossWinnings - fee;
-                    } else {
-                        // Check if user bet on any other outcome (losing bet)
+                if (userAddress && market.resolved) {
+                    if (market.isDraw) {
+                        // Handle draw scenario - calculate total user bets for refund
+                        let totalUserBets = 0;
                         for (let outcomeIndex = 0; outcomeIndex < market.outcomes.length; outcomeIndex++) {
-                            if (outcomeIndex !== market.winningOutcome) {
-                                const losingBetAmount = await contract.getUserBetAmount(id, userAddress, outcomeIndex);
-                                if (losingBetAmount.gt(0)) {
-                                    userHasLost = true;
-                                    break;
+                            const betAmount = await contract.getUserBetAmount(id, userAddress, outcomeIndex);
+                            totalUserBets += parseFloat(ethers.utils.formatEther(betAmount));
+                        }
+
+                        if (totalUserBets > 0) {
+                            // Check if user has already withdrawn refund
+                            userHasWithdrawn = await contract.hasUserWithdrawn(id, userAddress);
+
+                            // Calculate refund (original bets minus fees)
+                            const platformFee = 250; // 2.5% in basis points
+                            const fee = (totalUserBets * platformFee) / 10000;
+                            userWinnings = totalUserBets - fee;
+                        }
+                    } else {
+                        // Normal resolution (not a draw)
+                        const userBetAmount = await contract.getUserBetAmount(id, userAddress, market.winningOutcome);
+                        if (userBetAmount.gt(0)) {
+                            // Check if user has already withdrawn
+                            userHasWithdrawn = await contract.hasUserWithdrawn(id, userAddress);
+
+                            // Calculate potential winnings
+                            const userBetEth = parseFloat(ethers.utils.formatEther(userBetAmount));
+                            const winningPool = parseFloat(ethers.utils.formatEther(market.outcomeTotals[market.winningOutcome]));
+                            const totalPool = parseFloat(ethers.utils.formatEther(market.totalBets));
+                            const grossWinnings = (userBetEth * totalPool) / winningPool;
+                            const platformFee = 250; // 2.5% in basis points
+                            const fee = (grossWinnings * platformFee) / 10000;
+                            userWinnings = grossWinnings - fee;
+                        } else {
+                            // Check if user bet on any other outcome (losing bet)
+                            for (let outcomeIndex = 0; outcomeIndex < market.outcomes.length; outcomeIndex++) {
+                                if (outcomeIndex !== market.winningOutcome) {
+                                    const losingBetAmount = await contract.getUserBetAmount(id, userAddress, outcomeIndex);
+                                    if (losingBetAmount.gt(0)) {
+                                        userHasLost = true;
+                                        break;
+                                    }
                                 }
                             }
                         }
                     }
+
+                    // Get arbitrator fee info for current user
+                    arbitratorFeeInfo = await contract.getArbitratorFeeInfo(id, userAddress);
                 }
 
-                return renderMarketCard(market, probabilities, 'resolved', userWinnings, userHasLost, false, userHasWithdrawn);
+                return renderMarketCard(market, probabilities, 'resolved', userWinnings, userHasLost, false, userHasWithdrawn, arbitratorFeeInfo);
             })
         );
 
@@ -328,7 +355,7 @@ async function loadResolvedMarkets() {
     }
 }
 
-function renderMarketCard(market, probabilities, status, userWinnings = null, userHasLost = false, arbitratorHasVoted = false, userHasWithdrawn = false) {
+function renderMarketCard(market, probabilities, status, userWinnings = null, userHasLost = false, arbitratorHasVoted = false, userHasWithdrawn = false, arbitratorFeeInfo = null) {
     const resolutionDate = new Date(market.resolutionTime * 1000);
     const createdDate = new Date(market.createdAt * 1000);
     const totalBets = ethers.utils.formatEther(market.totalBets);
@@ -404,27 +431,54 @@ function renderMarketCard(market, probabilities, status, userWinnings = null, us
             </div>
         `;
     } else if (status === 'resolved' && userWinnings !== null && userWinnings > 0) {
-        if (userHasWithdrawn) {
-            actionHTML = `
-                <div class="withdrawn-section">
-                    <div class="withdrawn-info">
-                        <span class="withdrawn-icon">✅</span>
-                        <span class="withdrawn-message">Winnings Already Withdrawn</span>
-                        <span class="withdrawn-amount">${userWinnings.toFixed(4)} ETH</span>
+        if (market.isDraw) {
+            // Draw scenario - show refund message
+            if (userHasWithdrawn) {
+                actionHTML = `
+                    <div class="withdrawn-section">
+                        <div class="withdrawn-info">
+                            <span class="withdrawn-icon">✅</span>
+                            <span class="withdrawn-message">Refund Already Withdrawn (Market Draw)</span>
+                            <span class="withdrawn-amount">${userWinnings.toFixed(4)} ETH</span>
+                        </div>
                     </div>
-                </div>
-            `;
+                `;
+            } else {
+                actionHTML = `
+                    <div class="winnings-section draw">
+                        <div class="winnings-info">
+                            <span class="winnings-label">🔄 Market Draw - Refund Available:</span>
+                            <span class="winnings-amount-large">${userWinnings.toFixed(4)} ETH</span>
+                            <span class="winnings-note">(Your bets refunded minus 2.5% fees: 1.5% platform + 1% arbitrators)</span>
+                        </div>
+                        <button class="btn btn-success" onclick="withdrawWinnings(${market.id})">Withdraw Refund</button>
+                    </div>
+                `;
+            }
         } else {
-            actionHTML = `
-                <div class="winnings-section">
-                    <div class="winnings-info">
-                        <span class="winnings-label">💰 Your Winnings:</span>
-                        <span class="winnings-amount-large">${userWinnings.toFixed(4)} ETH</span>
-                        <span class="winnings-note">(After 2.5% total fees: 1.5% platform + 1% arbitrators)</span>
+            // Normal win scenario
+            if (userHasWithdrawn) {
+                actionHTML = `
+                    <div class="withdrawn-section">
+                        <div class="withdrawn-info">
+                            <span class="withdrawn-icon">✅</span>
+                            <span class="withdrawn-message">Winnings Already Withdrawn</span>
+                            <span class="withdrawn-amount">${userWinnings.toFixed(4)} ETH</span>
+                        </div>
                     </div>
-                    <button class="btn btn-success" onclick="withdrawWinnings(${market.id})">Withdraw Winnings</button>
-                </div>
-            `;
+                `;
+            } else {
+                actionHTML = `
+                    <div class="winnings-section">
+                        <div class="winnings-info">
+                            <span class="winnings-label">💰 Your Winnings:</span>
+                            <span class="winnings-amount-large">${userWinnings.toFixed(4)} ETH</span>
+                            <span class="winnings-note">(After 2.5% total fees: 1.5% platform + 1% arbitrators)</span>
+                        </div>
+                        <button class="btn btn-success" onclick="withdrawWinnings(${market.id})">Withdraw Winnings</button>
+                    </div>
+                `;
+            }
         }
     } else if (status === 'resolved' && userHasLost) {
         actionHTML = `
@@ -435,6 +489,106 @@ function renderMarketCard(market, probabilities, status, userWinnings = null, us
                 </div>
             </div>
         `;
+    }
+
+    // Add arbitrator fee section if user is an arbitrator
+    let arbitratorFeeHTML = '';
+    if (status === 'resolved' && arbitratorFeeInfo && arbitratorFeeInfo.isArbitrator) {
+        const feeAmount = parseFloat(ethers.utils.formatEther(arbitratorFeeInfo.potentialShare));
+        const totalFees = parseFloat(ethers.utils.formatEther(arbitratorFeeInfo.totalCollectedFees));
+
+        if (arbitratorFeeInfo.isEligible) {
+            if (arbitratorFeeInfo.hasClaimed) {
+                const voteInfo = market.isDraw
+                    ? `Market Draw - You Voted: ${market.outcomes[arbitratorFeeInfo.votedOutcome]}`
+                    : `Voted For: ${market.outcomes[arbitratorFeeInfo.votedOutcome]}`;
+
+                arbitratorFeeHTML = `
+                    <div class="arbitrator-fee-section claimed">
+                        <div class="arbitrator-fee-header">
+                            <span class="arbitrator-icon">⚖️</span>
+                            <span class="arbitrator-title">Arbitrator Fee Claimed ${market.isDraw ? '(Market Draw)' : ''}</span>
+                        </div>
+                        <div class="arbitrator-fee-info">
+                            <div class="fee-detail">
+                                <span class="fee-label">Your Fee:</span>
+                                <span class="fee-value">✅ ${feeAmount.toFixed(4)} ETH</span>
+                            </div>
+                            <div class="fee-detail">
+                                <span class="fee-label">${market.isDraw ? 'Your Vote:' : 'Voted For:'}</span>
+                                <span class="fee-value">${market.outcomes[arbitratorFeeInfo.votedOutcome]}</span>
+                            </div>
+                            <div class="fee-detail">
+                                <span class="fee-label">Eligible Arbitrators:</span>
+                                <span class="fee-value">${arbitratorFeeInfo.eligibleCount} of ${market.arbitrators.length}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                const feeExplanation = market.isDraw
+                    ? "Market ended in a draw. All arbitrators who voted share the fees equally."
+                    : "You voted for the winning outcome and are eligible for your share of arbitrator fees.";
+
+                arbitratorFeeHTML = `
+                    <div class="arbitrator-fee-section unclaimed">
+                        <div class="arbitrator-fee-header">
+                            <span class="arbitrator-icon">⚖️</span>
+                            <span class="arbitrator-title">Arbitrator Fee Available ${market.isDraw ? '(Market Draw)' : ''}</span>
+                        </div>
+                        ${market.isDraw ? `<div class="fee-explanation">${feeExplanation}</div>` : ''}
+                        <div class="arbitrator-fee-info">
+                            <div class="fee-detail">
+                                <span class="fee-label">Your Share:</span>
+                                <span class="fee-value-large">${feeAmount.toFixed(4)} ETH</span>
+                            </div>
+                            <div class="fee-detail">
+                                <span class="fee-label">${market.isDraw ? 'You Voted For:' : 'You Voted For:'}</span>
+                                <span class="fee-value">${market.outcomes[arbitratorFeeInfo.votedOutcome]} ✓</span>
+                            </div>
+                            <div class="fee-detail">
+                                <span class="fee-label">Total Arbitrator Fees:</span>
+                                <span class="fee-value">${totalFees.toFixed(4)} ETH</span>
+                            </div>
+                            <div class="fee-detail">
+                                <span class="fee-label">Eligible Arbitrators:</span>
+                                <span class="fee-value">${arbitratorFeeInfo.eligibleCount} of ${market.arbitrators.length} ${market.isDraw ? '(all who voted)' : '(voted correctly)'}</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-success" onclick="claimArbitratorFee(${market.id})">Claim Arbitrator Fee</button>
+                    </div>
+                `;
+            }
+        } else {
+            // Arbitrator but not eligible (didn't vote or voted incorrectly)
+            let reason;
+            if (market.isDraw) {
+                reason = "You did not vote on this market";
+            } else {
+                reason = !arbitratorFeeInfo.hasVoted
+                    ? "You did not vote on this market"
+                    : `You voted for "${market.outcomes[arbitratorFeeInfo.votedOutcome]}" but the winning outcome was "${market.outcomes[market.winningOutcome]}"`;
+            }
+
+            arbitratorFeeHTML = `
+                <div class="arbitrator-fee-section ineligible">
+                    <div class="arbitrator-fee-header">
+                        <span class="arbitrator-icon">⚖️</span>
+                        <span class="arbitrator-title">Arbitrator - Not Eligible for Fee ${market.isDraw ? '(Market Draw)' : ''}</span>
+                    </div>
+                    <div class="arbitrator-fee-info">
+                        <div class="fee-detail">
+                            <span class="fee-label">Reason:</span>
+                            <span class="fee-value">${reason}</span>
+                        </div>
+                        <div class="fee-detail">
+                            <span class="fee-label">Total Fees Distributed:</span>
+                            <span class="fee-value">${totalFees.toFixed(4)} ETH to ${arbitratorFeeInfo.eligibleCount} arbitrator(s)</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
     }
 
     return `
@@ -449,6 +603,8 @@ function renderMarketCard(market, probabilities, status, userWinnings = null, us
             </div>
 
             ${actionHTML}
+
+            ${arbitratorFeeHTML}
 
             <div class="market-info">
                 <div class="info-item">
@@ -582,6 +738,30 @@ async function withdrawWinnings(marketId) {
         await tx.wait();
 
         showSuccess('Winnings withdrawn successfully!');
+
+        await loadResolvedMarkets();
+        await loadMyBets();
+
+    } catch (error) {
+        showError(error);
+    }
+}
+
+async function claimArbitratorFee(marketId) {
+    if (!contract) {
+        showError('Please connect your wallet first');
+        return;
+    }
+
+    try {
+        showSuccess('Claiming arbitrator fee... Please confirm transaction in your wallet.');
+
+        const tx = await contract.claimArbitratorFee(marketId);
+
+        showSuccess('Transaction submitted. Waiting for confirmation...');
+        await tx.wait();
+
+        showSuccess('Arbitrator fee claimed successfully!');
 
         await loadResolvedMarkets();
         await loadMyBets();
