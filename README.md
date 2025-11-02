@@ -44,10 +44,12 @@ See [First-Time Setup Guide](#-first-time-setup-guide) below for detailed step-b
 Before running this project, ensure you have the following installed:
 
 1. **Node.js (v16 or later)**
+
    - Download from [nodejs.org](https://nodejs.org/)
    - Verify installation: `node --version`
 
 2. **MetaMask Browser Extension**
+
    - Install from [metamask.io](https://metamask.io/)
    - Create a wallet
 
@@ -58,6 +60,7 @@ Before running this project, ensure you have the following installed:
 ### Step 2: Project Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/your-username/SC4053-Blockchain-Technology.git
    cd SC4053-Blockchain-Technology
@@ -69,7 +72,34 @@ Before running this project, ensure you have the following installed:
    ```
    This will install Hardhat, OpenZeppelin contracts, and all required packages.
 
-### Step 3: MetaMask Configuration
+### Step 3: Start the Local Environment
+
+You need to open **THREE separate terminal windows**:
+
+**Terminal 1 - Start Local Blockchain:**
+
+```bash
+npm run node
+```
+
+This starts a local Ethereum blockchain at `http://127.0.0.1:8545`. Keep this terminal running.
+
+**Terminal 2 - Deploy Smart Contract:**
+
+```bash
+npm run deploy:localhost
+```
+
+This deploys the PredictionMarket contract to your local blockchain.
+
+**Terminal 3 - Start Frontend Server:**
+
+```bash
+cd frontend
+python -m http.server 8080
+```
+
+### Step 4: MetaMask Configuration
 
 Configure MetaMask to connect to the local Hardhat network:
 
@@ -84,12 +114,13 @@ Configure MetaMask to connect to the local Hardhat network:
    - **Currency Symbol:** `ETH`
 6. Click "Save"
 
-### Step 4: Import Test Accounts
+### Step 5: Import Test Accounts
 
 Hardhat provides 20 pre-funded test accounts (each with 10,000 ETH). You need to import multiple accounts for testing.
 
 **IMPORTANT:** You need at least **5 accounts** total:
-- 1 account for creating markets 
+
+- 1 account for creating markets
 - 3 accounts to act as arbitrators (minimum required)
 - 1 account for placing bets
 
@@ -108,31 +139,10 @@ This gives you **Account #0** (`0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266`) wit
 For a complete list of all 20 available test accounts with their addresses and private keys, see **[TEST_ACCOUNTS.md](./TEST_ACCOUNTS.md)**.
 
 That document includes:
+
 - All 20 test account addresses and private keys
 
 **Minimum Requirement:** Import at least 4 more accounts (3 for arbitrators, 1 for placing bets)
-
-### Step 5: Start the Local Environment
-
-You need to open **THREE separate terminal windows**:
-
-**Terminal 1 - Start Local Blockchain:**
-```bash
-npm run node
-```
-This starts a local Ethereum blockchain at `http://127.0.0.1:8545`. Keep this terminal running.
-
-**Terminal 2 - Deploy Smart Contract:**
-```bash
-npm run deploy:localhost
-```
-This deploys the PredictionMarket contract to your local blockchain.
-
-**Terminal 3 - Start Frontend Server:**
-```bash
-cd frontend
-python -m http.server 8080
-```
 
 ### Step 6: Access the Application
 
@@ -144,6 +154,7 @@ python -m http.server 8080
 6. Approve the connection in MetaMask
 
 You should now see:
+
 - Your wallet address displayed
 - Your balance (~10,000 ETH)
 - Ability to create markets and place bets
@@ -226,12 +237,14 @@ When you're done testing:
 ### Key Design Highlights
 
 **Multi-Arbitrator Voting (3-21 arbitrators):**
+
 - Prevents single point of failure
 - Multi-arbitrator voing with simple majority (>50%) prevents single point of failure and provides resilience against minority collusion
 - Economic incentives: only correct voters earn fees
 - Draw handling when votes tie (fair refunds for all)
 
 **Security Features:**
+
 - ReentrancyGuard on all withdrawal functions
 - Conflict of interest prevention (creators/arbitrators can't bet)
 - Double-withdrawal protection
@@ -287,26 +300,32 @@ Key parameters in the PredictionMarket contract:
 ### Common Issues
 
 1. **"MetaMask not detected"**
+
    - Make sure you're accessing via `http://localhost:8080`, not by opening the HTML file directly
    - Ensure MetaMask extension is installed and enabled
 
 2. **"Wrong network" error**
+
    - Check that MetaMask is connected to "Localhost 8545" network
    - Verify the Chain ID is 31337
 
 3. **"Nonce too high" or transaction errors**
+
    - Reset MetaMask account: Settings → Advanced → Reset Account
    - This happens when you restart the local blockchain
 
 4. **"Contract not deployed" or undefined address**
+
    - Make sure you ran `npm run deploy:localhost` in Terminal 2
    - Verify the contract address is correct in `frontend/js/app.js`
 
 5. **"Insufficient funds" error**
+
    - Ensure you imported the test account with 10,000 ETH
    - Check you're connected to the correct account in MetaMask
 
 6. **Python server won't start**
+
    - Try `python3 -m http.server 8080` instead
 
 7. **"Port 8545 already in use"**
@@ -366,53 +385,54 @@ Key parameters in the PredictionMarket contract:
 ### Understanding Arbitrator Fees
 
 **How Fees Are Collected:**
+
 - 1% of every winning payout goes to the arbitrator fee pool
 - In draw scenarios, 1% of every refund contributes to the arbitrator fee pool
 - Total collected fees are displayed transparently on resolved markets
 
 **Fee Distribution Rules:**
 
-| Scenario | Who Gets Fees | Split Method |
-|----------|--------------|--------------|
+| Scenario       | Who Gets Fees                                  | Split Method                     |
+| -------------- | ---------------------------------------------- | -------------------------------- |
 | **Normal Win** | Only arbitrators who voted for winning outcome | Equal split among correct voters |
-| **Draw** | All arbitrators who voted (any outcome) | Equal split among all voters |
-| **No Vote** | No fees earned | N/A |
+| **Draw**       | All arbitrators who voted (any outcome)        | Equal split among all voters     |
+| **No Vote**    | No fees earned                                 | N/A                              |
 
 ## 📜 Smart Contract Functions
 
 ### State-Changing Functions
 
-| Function                    | Description                                          | Access Restrictions            |
-| --------------------------- | ---------------------------------------------------- | ------------------------------ |
-| `createMarket()`            | Create a new prediction market with multiple arbitrators | Requires 0.001 ETH minimum fee |
-| `placeBet()`                | Place a bet on market outcome                        | Cannot be creator or arbitrator of market |
-| `voteOnOutcome()`           | Vote on winning outcome after resolution time        | Designated arbitrators only    |
-| `withdrawWinnings()`        | Withdraw winnings or refund after market resolves    | Users with winning/refundable bets only |
-| `claimArbitratorFee()`      | Claim arbitrator fee share after market resolves     | Eligible arbitrators only (voted correctly or any vote in draw) |
+| Function               | Description                                              | Access Restrictions                                             |
+| ---------------------- | -------------------------------------------------------- | --------------------------------------------------------------- |
+| `createMarket()`       | Create a new prediction market with multiple arbitrators | Requires 0.001 ETH minimum fee                                  |
+| `placeBet()`           | Place a bet on market outcome                            | Cannot be creator or arbitrator of market                       |
+| `voteOnOutcome()`      | Vote on winning outcome after resolution time            | Designated arbitrators only                                     |
+| `withdrawWinnings()`   | Withdraw winnings or refund after market resolves        | Users with winning/refundable bets only                         |
+| `claimArbitratorFee()` | Claim arbitrator fee share after market resolves         | Eligible arbitrators only (voted correctly or any vote in draw) |
 
 ### View Functions (Read-Only)
 
-| Function                     | Description                                          | Returns |
-| ---------------------------- | ---------------------------------------------------- | ------- |
-| `getMarketInfo()`           | Get complete market details including draw status    | MarketInfo struct |
-| `getOutcomeProbabilities()` | Get current probability percentages for all outcomes | uint256[] (basis points) |
-| `getAllActiveMarkets()`      | Get IDs of all unresolved markets                   | uint256[] market IDs |
-| `getAllResolvedMarkets()`    | Get IDs of all resolved markets                     | uint256[] market IDs |
-| `getUserBets()`              | Get all bets placed by specific user                | UserBet[] struct array |
-| `getUserBetAmount()`         | Get user's total bet amount for specific outcome    | uint256 (wei) |
-| `getUserMarkets()`           | Get all markets created by specific user            | uint256[] market IDs |
-| `hasArbitratorVoted()`       | Check if arbitrator has cast their vote             | bool |
-| `hasUserWithdrawn()`        | Check if user has withdrawn from market             | bool |
-| `getArbitratorFeeInfo()`     | Get comprehensive arbitrator fee information        | Multiple return values |
-| `getArbitratorVoteDetails()` | Get voting status for all arbitrators in market     | Multiple arrays |
+| Function                     | Description                                          | Returns                  |
+| ---------------------------- | ---------------------------------------------------- | ------------------------ |
+| `getMarketInfo()`            | Get complete market details including draw status    | MarketInfo struct        |
+| `getOutcomeProbabilities()`  | Get current probability percentages for all outcomes | uint256[] (basis points) |
+| `getAllActiveMarkets()`      | Get IDs of all unresolved markets                    | uint256[] market IDs     |
+| `getAllResolvedMarkets()`    | Get IDs of all resolved markets                      | uint256[] market IDs     |
+| `getUserBets()`              | Get all bets placed by specific user                 | UserBet[] struct array   |
+| `getUserBetAmount()`         | Get user's total bet amount for specific outcome     | uint256 (wei)            |
+| `getUserMarkets()`           | Get all markets created by specific user             | uint256[] market IDs     |
+| `hasArbitratorVoted()`       | Check if arbitrator has cast their vote              | bool                     |
+| `hasUserWithdrawn()`         | Check if user has withdrawn from market              | bool                     |
+| `getArbitratorFeeInfo()`     | Get comprehensive arbitrator fee information         | Multiple return values   |
+| `getArbitratorVoteDetails()` | Get voting status for all arbitrators in market      | Multiple arrays          |
 
 ### Owner-Only Functions
 
-| Function                | Description                                          | Access |
-| ----------------------- | ---------------------------------------------------- | ------ |
-| `setPlatformFee()`      | Update platform fee percentage (max 10%)            | Contract owner only |
-| `setArbitratorFee()`    | Update arbitrator fee percentage (max 5%)           | Contract owner only |
-| `emergencyWithdraw()`   | Emergency withdrawal of contract balance            | Contract owner only |
+| Function              | Description                               | Access              |
+| --------------------- | ----------------------------------------- | ------------------- |
+| `setPlatformFee()`    | Update platform fee percentage (max 10%)  | Contract owner only |
+| `setArbitratorFee()`  | Update arbitrator fee percentage (max 5%) | Contract owner only |
+| `emergencyWithdraw()` | Emergency withdrawal of contract balance  | Contract owner only |
 
 ## 🖥 Frontend Features
 
@@ -482,6 +502,7 @@ Key parameters in the PredictionMarket contract:
 ## 💰 Fee Distribution Examples
 
 ### Example 1: Normal Resolution (3 Arbitrators, 2 Vote Correctly)
+
 - **Market**: "Will it rain tomorrow?"
 - **Total Pool**: 100 ETH
 - **Arbitrator A**: Votes "Yes" ✅
@@ -490,18 +511,21 @@ Key parameters in the PredictionMarket contract:
 - **Outcome**: "Yes" wins (2/3 majority)
 
 **Winner with 50 ETH bet receives:**
+
 - Gross winnings: 50 ETH
 - Platform fee (1.5%): -0.75 ETH
 - Arbitrator fee (1%): -0.5 ETH
 - **Net payout: 48.75 ETH**
 
 **Arbitrator fees:**
+
 - Total arbitrator fees collected: 1 ETH (1% of 100 ETH total pool)
 - Eligible arbitrators: A and B (voted correctly)
 - Split between A and B only: **0.5 ETH each**
 - Arbitrator C gets: **0 ETH** (voted wrong)
 
 ### Example 2: Draw (4 Arbitrators, 2-2 Tie)
+
 - **Market**: "Will candidate win election?"
 - **Total Pool**: 200 ETH
 - **Arbitrator A**: Votes "Yes" ✅
@@ -511,17 +535,20 @@ Key parameters in the PredictionMarket contract:
 - **Outcome**: **DRAW** (no majority)
 
 **All bettors receive refund:**
+
 - If you bet 10 ETH total on any outcomes
 - Platform fee (1.5%): -0.15 ETH
 - Arbitrator fee (1%): -0.1 ETH
 - **Refund: 9.75 ETH**
 
 **Arbitrator fees:**
+
 - Total arbitrator fees: 2 ETH (1% of 200 ETH)
 - Split among ALL who voted (A, B, C, D): **0.5 ETH each**
 - Non-voters get: **0 ETH**
 
 ### Example 3: Low Participation (5 Arbitrators, Only 3 Vote)
+
 - **Total Pool**: 150 ETH
 - **Arbitrator A**: Votes "Yes" ✅
 - **Arbitrator B**: Votes "Yes" ✅
@@ -531,6 +558,7 @@ Key parameters in the PredictionMarket contract:
 - **Outcome**: "Yes" wins (3/5 majority)
 
 **Arbitrator fees split:**
+
 - Total arbitrator fees collected: 1.5 ETH (1% of 150 ETH)
 - Only A, B, C receive fees: **0.5 ETH each (equal split)**
 - D and E get: **0 ETH** (didn't participate)
