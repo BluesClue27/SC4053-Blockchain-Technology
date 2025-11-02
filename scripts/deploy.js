@@ -17,22 +17,6 @@ async function main() {
 
     console.log("PredictionMarket deployed to:", contractAddress);
 
-    // Verify the contract on Etherscan (if not on localhost)
-    if (hre.network.name !== "hardhat" && hre.network.name !== "localhost") {
-        console.log("Waiting for block confirmations...");
-        await predictionMarket.deploymentTransaction().wait(5);
-
-        try {
-            await hre.run("verify:verify", {
-                address: contractAddress,
-                constructorArguments: [],
-            });
-            console.log("Contract verified on Etherscan");
-        } catch (error) {
-            console.log("Error verifying contract:", error.message);
-        }
-    }
-
     // Create a sample market for testing
     console.log("\nCreating sample market...");
     const resolutionTime = Math.floor(Date.now() / 1000) + (60 * 5); // 5 mins from now
@@ -42,13 +26,15 @@ async function main() {
 
     console.log("Using arbitrators:", arbitrators);
 
-    // Category: 2 = CRYPTO (0=SPORTS, 1=POLITICS, 2=CRYPTO, 3=WEATHER, 4=ENTERTAINMENT, 5=SCIENCE, 6=BUSINESS, 7=OTHER)
+    // Category: 2 = CRYPTO 
+    // (0=SPORTS, 1=POLITICS, 2=CRYPTO, 3=WEATHER, 
+    // 4=ENTERTAINMENT, 5=SCIENCE, 6=BUSINESS, 7=OTHER)
     const tx = await predictionMarket.createMarket(
         "Will Bitcoin reach $100,000 by the end of 2025?",
         ["Yes", "No", "Uncertain"],
         resolutionTime,
         arbitrators,
-        2, // CRYPTO category
+        2, 
         { value: hre.ethers.parseEther("0.001") }
     );
 

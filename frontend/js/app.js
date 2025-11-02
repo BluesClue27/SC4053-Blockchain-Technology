@@ -1,7 +1,13 @@
+/**
+ * const platformFee = 150; // Platform fee in basis points (1.5%)
+ * const arbitratorFee = 100; // Arbitrator fee in basis points (1%)
+ * 
+ */
 // Contract configuration
-const CONTRACT_ADDRESS = '0x5FbDB2315678afecb367f032d93F642f64180aa3'; // Replace with deployed contract address
+// Replace with deployed contract address
+const CONTRACT_ADDRESS = '0x5FbDB2315678afecb367f032d93F642f64180aa3'; 
+// Add your contract ABI here
 const CONTRACT_ABI = [
-    // Add your contract ABI here
     "function createMarket(string memory _description, string[] memory _outcomes, uint256 _resolutionTime, address[] memory _arbitrators, uint8 _category) external payable returns (uint256)",
     "function placeBet(uint256 _marketId, uint256 _outcome) external payable",
     "function getMarketInfo(uint256 _marketId) external view returns (tuple(uint256 id, string description, string[] outcomes, uint256 resolutionTime, address creator, address[] arbitrators, bool resolved, uint256 winningOutcome, uint256 totalBets, uint256[] outcomeTotals, uint256 createdAt, uint256 totalVotes, uint256 requiredVotes, bool isDraw, uint8 category))",
@@ -115,7 +121,7 @@ window.addEventListener('load', async () => {
 
 function setMinDateTime() {
     const now = new Date();
-    now.setHours(now.getHours() + 1); // Minimum 1 hour from now
+    now.setMinutes(now.getMinutes() + 1);
     const minDateTime = now.toISOString().slice(0, 16);
     document.getElementById('resolutionTime').min = minDateTime;
 }
@@ -161,25 +167,25 @@ async function connectWallet() {
         showError(error);
     }
 }
-
+// Helper function for tab switching
 function switchTab(tabName) {
-    // Update tab buttons
+
     document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
     event.target.classList.add('active');
 
-    // Update tab content
     document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
     document.getElementById(tabName + '-tab').classList.add('active');
 
-    // Load data for the active tab
     if (tabName === 'markets' && contract) {
         loadActiveMarkets();
         loadResolvedMarkets();
-    } else if (tabName === 'my-bets' && contract) {
+    } 
+    else if (tabName === 'my-bets' && contract) {
         loadMyBets();
     }
 }
 
+// Function to add outcome input field
 function addOutcome() {
     const container = document.getElementById('outcomesContainer');
     const outcomeDiv = document.createElement('div');
@@ -191,6 +197,7 @@ function addOutcome() {
     container.appendChild(outcomeDiv);
 }
 
+// Function to remove outcome input field
 function removeOutcome(button) {
     const container = document.getElementById('outcomesContainer');
     if (container.children.length > 2) {
@@ -200,6 +207,7 @@ function removeOutcome(button) {
     }
 }
 
+// Function to create a new market
 async function createMarket(event) {
     event.preventDefault();
 
@@ -239,13 +247,27 @@ async function createMarket(event) {
             }
         }
 
-        // Get outcomes
         const outcomeInputs = document.querySelectorAll('#outcomesContainer input');
         const outcomes = Array.from(outcomeInputs).map(input => input.value.trim()).filter(val => val);
 
         if (outcomes.length < 2) {
             showError('Please provide at least 2 outcomes');
             return;
+        }
+
+        // Check for duplicate outcomes
+        const uniqueOutcomes = new Set(outcomes.map(o => o.toLowerCase()));
+        if (uniqueOutcomes.size !== outcomes.length) {
+            showError('Duplicate outcomes not allowed. Each outcome must be unique.');
+            return;
+        }
+
+        // Check for empty outcomes
+        for (const outcome of outcomes) {
+            if (outcome.length === 0) {
+                showError('Outcome cannot be empty');
+                return;
+            }
         }
 
         showSuccess('Creating market... Please confirm transaction in your wallet.');
@@ -299,6 +321,7 @@ async function createMarket(event) {
     }
 }
 
+// Function to load active markets
 async function loadActiveMarkets() {
     if (!contract) return;
 
@@ -346,6 +369,7 @@ async function loadActiveMarkets() {
     }
 }
 
+// Function to load resolved markets
 async function loadResolvedMarkets() {
     if (!contract) return;
 
@@ -388,8 +412,8 @@ async function loadResolvedMarkets() {
                             userHasWithdrawn = await contract.hasUserWithdrawn(id, userAddress);
 
                             // Calculate refund (original bets minus fees: 1.5% platform + 1% arbitrator)
-                            const platformFee = 150; // 1.5% in basis points
-                            const arbitratorFee = 100; // 1% in basis points
+                            const platformFee = 150; 
+                            const arbitratorFee = 100; 
                             const totalFeeRate = platformFee + arbitratorFee;
                             const fee = (totalUserBets * totalFeeRate) / 10000;
                             userWinnings = totalUserBets - fee;
@@ -407,8 +431,8 @@ async function loadResolvedMarkets() {
                             const totalPool = parseFloat(ethers.utils.formatEther(market.totalBets));
                             const grossWinnings = (userBetEth * totalPool) / winningPool;
                             // Deduct fees: 1.5% platform + 1% arbitrator = 2.5%
-                            const platformFee = 150; // 1.5% in basis points
-                            const arbitratorFee = 100; // 1% in basis points
+                            const platformFee = 150; 
+                            const arbitratorFee = 100; 
                             const totalFeeRate = platformFee + arbitratorFee;
                             const fee = (grossWinnings * totalFeeRate) / 10000;
                             userWinnings = grossWinnings - fee;
@@ -433,11 +457,10 @@ async function loadResolvedMarkets() {
                     // This shows the correct fee even before any withdrawals
                     if (arbitratorFeeInfo.isArbitrator && arbitratorFeeInfo.isEligible) {
                         const totalBetsEth = parseFloat(ethers.utils.formatEther(market.totalBets));
-                        const arbitratorFeeRate = 100; // 1% in basis points
+                        const arbitratorFeeRate = 100; 
                         const totalExpectedFees = (totalBetsEth * arbitratorFeeRate) / 10000;
                         const eligibleCount = arbitratorFeeInfo.eligibleCount;
 
-                        // Override potentialShare with expected value
                         if (eligibleCount > 0) {
                             arbitratorFeeInfo.expectedShare = totalExpectedFees / eligibleCount;
                         }
@@ -448,7 +471,6 @@ async function loadResolvedMarkets() {
             })
         );
 
-        // Store for filtering
         allResolvedMarkets = marketsHTML;
 
         marketsContainer.innerHTML = marketsHTML.join('');
@@ -458,6 +480,7 @@ async function loadResolvedMarkets() {
     }
 }
 
+// Function to render a frontend market card
 function renderMarketCard(market, probabilities, status, userWinnings = null, userHasLost = false, arbitratorHasVoted = false, userHasWithdrawn = false, arbitratorFeeInfo = null) {
     const resolutionDate = new Date(market.resolutionTime * 1000);
     const createdDate = new Date(market.createdAt * 1000);
@@ -487,7 +510,7 @@ function renderMarketCard(market, probabilities, status, userWinnings = null, us
     );
 
     const outcomesHTML = market.outcomes.map((outcome, index) => {
-        const probability = probabilities[index] / 100; // Convert from basis points
+        const probability = probabilities[index] / 100; 
         const betAmount = ethers.utils.formatEther(market.outcomeTotals[index]);
         const isWinner = status === 'resolved' && index === market.winningOutcome;
 
@@ -712,17 +735,18 @@ function renderMarketCard(market, probabilities, status, userWinnings = null, us
     `;
 }
 
+// Function to select an outcome
 function selectOutcome(marketId, outcomeIndex) {
     selectedMarketId = marketId;
     selectedOutcome = outcomeIndex;
 
-    // Visual feedback
     document.querySelectorAll(`[onclick*="selectOutcome(${marketId}"]`).forEach(el => {
         el.classList.remove('selected');
     });
     event.target.closest('.outcome-option').classList.add('selected');
 }
 
+// Function to place a bet
 async function placeBet(marketId) {
     if (!contract) {
         showError('Please connect your wallet first');
@@ -767,6 +791,7 @@ async function placeBet(marketId) {
     }
 }
 
+// Function for arbitrator to vote on outcome
 async function voteOnOutcome(marketId) {
     if (!contract) {
         showError('Please connect your wallet first');
@@ -794,6 +819,7 @@ async function voteOnOutcome(marketId) {
     }
 }
 
+// Function to withdraw winnings
 async function withdrawWinnings(marketId) {
     if (!contract) {
         showError('Please connect your wallet first');
@@ -818,6 +844,7 @@ async function withdrawWinnings(marketId) {
     }
 }
 
+// Function to claim arbitrator fee
 async function claimArbitratorFee(marketId) {
     if (!contract) {
         showError('Please connect your wallet first');
@@ -842,6 +869,7 @@ async function claimArbitratorFee(marketId) {
     }
 }
 
+// Function to load user's bets in My Bets tab
 async function loadMyBets() {
     if (!contract || !userAddress) return;
 
@@ -892,7 +920,6 @@ async function loadMyBets() {
                         betsByOutcome[outcomeIndex].bets.push(bet);
                     }
 
-                    // Calculate if user has winning bets and potential winnings
                     let hasWinningBet = false;
                     let totalWinningBetAmount = 0;
                     let potentialWinnings = 0;
@@ -911,12 +938,12 @@ async function loadMyBets() {
                                 const totalBetsEth = parseFloat(ethers.utils.formatEther(market.totalBets));
                                 if (totalBetsEth > 0) {
                                     // Calculate refund (original bets minus fees: 1.5% platform + 1% arbitrator)
-                                    const platformFee = 150; // 1.5% in basis points
-                                    const arbitratorFee = 100; // 1% in basis points
+                                    const platformFee = 150; 
+                                    const arbitratorFee = 100; 
                                     const totalFeeRate = platformFee + arbitratorFee;
                                     const fee = (totalUserBetsInDraw * totalFeeRate) / 10000;
                                     potentialWinnings = totalUserBetsInDraw - fee;
-                                    hasWinningBet = true; // Set to true so we show the refund panel
+                                    hasWinningBet = true; // Set to true to show the refund panel
                                 }
                             }
                         } else {
@@ -933,8 +960,8 @@ async function loadMyBets() {
                                 const winningPool = parseFloat(ethers.utils.formatEther(market.outcomeTotals[market.winningOutcome]));
                                 const totalPool = parseFloat(ethers.utils.formatEther(market.totalBets));
                                 const grossWinnings = (totalWinningBetAmount * totalPool) / winningPool;
-                                const platformFee = 150; // 1.5% in basis points
-                                const arbitratorFee = 100; // 1% in basis points
+                                const platformFee = 150; 
+                                const arbitratorFee = 100; 
                                 const totalFeeRate = platformFee + arbitratorFee;
                                 const fee = (grossWinnings * totalFeeRate) / 10000;
                                 potentialWinnings = grossWinnings - fee;
@@ -943,13 +970,11 @@ async function loadMyBets() {
                     }
 
                     const betsListHTML = Object.values(betsByOutcome).map(outcomeData => {
-                        // Convert to numbers for comparison (they might be BigNumber objects)
                         const outcomeIdx = Number(outcomeData.outcomeIndex);
                         const winningOutcomeNum = Number(market.winningOutcome);
                         const isWinningBet = market.resolved && !market.isDraw && outcomeIdx === winningOutcomeNum;
                         const probability = (probabilities[outcomeData.outcomeIndex] / 100).toFixed(1);
 
-                        // Calculate potential earnings for active markets OR actual winnings for resolved markets
                         let potentialEarnings = 0;
                         let actualWinnings = 0;
 
@@ -959,8 +984,8 @@ async function loadMyBets() {
                             const totalPool = parseFloat(ethers.utils.formatEther(market.totalBets));
                             if (outcomePool > 0) {
                                 const grossWinnings = (outcomeData.totalAmount * totalPool) / outcomePool;
-                                const platformFee = 150; // 1.5% in basis points
-                                const arbitratorFee = 100; // 1% in basis points
+                                const platformFee = 150; 
+                                const arbitratorFee = 100; 
                                 const totalFeeRate = platformFee + arbitratorFee;
                                 const fee = (grossWinnings * totalFeeRate) / 10000;
                                 potentialEarnings = grossWinnings - fee;
@@ -971,8 +996,8 @@ async function loadMyBets() {
                             const totalPool = parseFloat(ethers.utils.formatEther(market.totalBets));
                             if (winningPool > 0) {
                                 const grossWinnings = (outcomeData.totalAmount * totalPool) / winningPool;
-                                const platformFee = 150; // 1.5% in basis points
-                                const arbitratorFee = 100; // 1% in basis points
+                                const platformFee = 150; 
+                                const arbitratorFee = 100; 
                                 const totalFeeRate = platformFee + arbitratorFee;
                                 const fee = (grossWinnings * totalFeeRate) / 10000;
                                 actualWinnings = grossWinnings - fee;
@@ -981,8 +1006,8 @@ async function loadMyBets() {
                             // Draw - show refund amount for this specific outcome
                             const totalBetsEth = parseFloat(ethers.utils.formatEther(market.totalBets));
                             if (totalBetsEth > 0) {
-                                const platformFee = 150; // 1.5% in basis points
-                                const arbitratorFee = 100; // 1% in basis points
+                                const platformFee = 150; 
+                                const arbitratorFee = 100;
                                 const totalFeeRate = platformFee + arbitratorFee;
                                 const fee = (outcomeData.totalAmount * totalFeeRate) / 10000;
                                 actualWinnings = outcomeData.totalAmount - fee;
@@ -1184,8 +1209,13 @@ function extractErrorMessage(error) {
     if (errorString.includes('Market not yet resolvable')) {
         return 'Market resolution time has not been reached yet.';
     }
+    if (errorString.includes('Duplicate outcomes not allowed')) {
+        return 'Duplicate outcomes not allowed. Each outcome must be unique.';
+    }
+    if (errorString.includes('Outcome cannot be empty')) {
+        return 'Outcome cannot be empty.';
+    }
 
-    // If no pattern matched, return a generic message
     return 'Transaction failed. Please try again.';
 }
 
@@ -1270,11 +1300,3 @@ function dismissModal() {
     }
 }
 
-// Keep these for backwards compatibility (now just call dismissModal)
-function dismissError() {
-    dismissModal();
-}
-
-function dismissSuccess() {
-    dismissModal();
-}

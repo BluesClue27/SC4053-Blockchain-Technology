@@ -183,6 +183,17 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         require(_arbitrators.length <= 21, "Maximum 21 arbitrators allowed");
         require(msg.value >= 0.001 ether, "Minimum creation fee required");
 
+        // Validate all outcomes are unique (no duplicates)
+        for (uint256 i = 0; i < _outcomes.length; i++) {
+            require(bytes(_outcomes[i]).length > 0, "Outcome cannot be empty");
+            for (uint256 j = i + 1; j < _outcomes.length; j++) {
+                require(
+                    keccak256(bytes(_outcomes[i])) != keccak256(bytes(_outcomes[j])),
+                    "Duplicate outcomes not allowed"
+                );
+            }
+        }
+
         // Validate all arbitrators are non-zero and unique
         for (uint256 i = 0; i < _arbitrators.length; i++) {
             require(_arbitrators[i] != address(0), "Invalid arbitrator address");

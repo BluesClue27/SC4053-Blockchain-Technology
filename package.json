@@ -8,14 +8,9 @@
     "test": "hardhat test",
     "node": "hardhat node",
     "deploy:localhost": "hardhat run scripts/deploy.js --network localhost",
-    "deploy:goerli": "hardhat run scripts/deploy.js --network goerli",
-    "deploy:sepolia": "hardhat run scripts/deploy.js --network sepolia",
-    "deploy:mumbai": "hardhat run scripts/deploy.js --network mumbai",
     "clean": "hardhat clean",
     "coverage": "hardhat coverage",
-    "size": "hardhat size-contracts",
-    "verify:goerli": "hardhat verify --network goerli",
-    "verify:sepolia": "hardhat verify --network sepolia"
+    "size": "hardhat size-contracts"
   },
   "keywords": [
     "ethereum",
