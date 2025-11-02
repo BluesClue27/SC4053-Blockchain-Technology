@@ -46,7 +46,7 @@ async function main() {
         "Will Bitcoin reach $100,000 by the end of 2025?",
         ["Yes", "No", "Uncertain"],
         resolutionTime,
-        arbitrators, 
+        arbitrators,
         { value: hre.ethers.parseEther("0.001") }
     );
 
@@ -89,9 +89,9 @@ async function main() {
         `const CONTRACT_ADDRESS = '${contractAddress}'`
     );
 
-    // fs.writeFileSync(frontendPath, frontendCode);
-    // console.log("✅ Frontend updated with new contract address!");
-    // console.log("\n⚠️  IMPORTANT: Hard refresh your browser (Ctrl+Shift+R) to clear cache!");
+    fs.writeFileSync(frontendPath, frontendCode);
+    console.log("✅ Frontend updated with new contract address!");
+    console.log("\n⚠️  IMPORTANT: Hard refresh your browser (Ctrl+Shift+R) to clear cache!");
 }
 
 main()
