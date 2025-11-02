@@ -49,12 +49,11 @@ Before running this project, ensure you have the following installed:
 
 2. **MetaMask Browser Extension**
    - Install from [metamask.io](https://metamask.io/)
-   - Available for Chrome, Firefox, Brave, and Edge
+   - Create a wallet
 
 3. **Python (for frontend server)**
    - Usually comes with Node.js
    - Verify installation: `python --version` or `python3 --version`
-   - Alternative: Use Node.js http-server (`npm install -g http-server`)
 
 ### Step 2: Project Installation
 
@@ -75,14 +74,15 @@ Before running this project, ensure you have the following installed:
 Configure MetaMask to connect to the local Hardhat network:
 
 1. Open MetaMask extension
-2. Click the network dropdown at the top
-3. Select "Add Network" or "Add a network manually"
-4. Enter the following details:
+2. Click the menu at the top right
+3. Select "Networks"
+4. Select "Add a custom network"
+5. Enter the following details:
    - **Network Name:** `Localhost 8545`
    - **RPC URL:** `http://127.0.0.1:8545`
    - **Chain ID:** `31337`
    - **Currency Symbol:** `ETH`
-5. Click "Save"
+6. Click "Save"
 
 ### Step 4: Import Test Accounts
 
@@ -109,9 +109,6 @@ For a complete list of all 20 available test accounts with their addresses and p
 
 That document includes:
 - All 20 test account addresses and private keys
-- 4 recommended testing scenarios (basic, multiple markets, complex, and large-scale)
-- Step-by-step workflow examples
-- Instructions for using accounts as arbitrators or bidders
 
 **Minimum Requirement:** Import at least 4 more accounts (3 for arbitrators, 1 for placing bets)
 
@@ -131,20 +128,10 @@ npm run deploy:localhost
 ```
 This deploys the PredictionMarket contract to your local blockchain.
 
-**IMPORTANT:** Copy the contract address from the output. It will look like:
-```
-PredictionMarket deployed to: 0x5FbDB2315678afecb367f032d93F642f64180aa3
-```
-
 **Terminal 3 - Start Frontend Server:**
 ```bash
 cd frontend
 python -m http.server 8080
-```
-
-Alternative using Node.js (if Python is not available):
-```bash
-npx http-server frontend -p 8080
 ```
 
 ### Step 6: Access the Application
@@ -178,8 +165,6 @@ You should now see:
 3. Click "Create Market"
 4. Confirm the transaction in MetaMask
 
-**Note:** See [TEST_ACCOUNTS.md](./TEST_ACCOUNTS.md) for recommended testing scenarios with specific account assignments.
-
 #### Place a Bet
 
 1. Go to "Browse Markets" tab
@@ -188,6 +173,8 @@ You should now see:
 4. Enter bet amount (e.g., `0.1` ETH)
 5. Click "Place Bet"
 6. Confirm transaction in MetaMask
+
+**Note:** Creators and arbitrators cannot bet in the market they created or are arbitrating respectively
 
 ### Stopping the Application
 
@@ -203,8 +190,7 @@ When you're done testing:
 
 1. Start the blockchain again (`npm run node`)
 2. Deploy the contract again (`npm run deploy:localhost`)
-3. Get the new contract address (it may be the same or different)
-4. **Reset MetaMask account:**
+3. **Reset MetaMask account:**
    - Open MetaMask → Settings → Advanced
    - Click "Clear activity tab data" or "Reset Account"
    - This clears the transaction history for the new blockchain instance
@@ -213,23 +199,23 @@ When you're done testing:
 
 ### Core Features
 
-- **Market Creation**: Users can create new prediction markets with custom descriptions, outcomes, and resolution times
-- **Multi-Arbitrator System**: Markets require 3-21 arbitrators for decentralized resolution
-- **Voting Mechanism**: Arbitrators vote on outcomes with simple majority consensus
 - **Betting System**: Users can place bets on different outcomes using ETH
-- **Draw Handling**: Automatic bet refunds (minus fees) when arbitrator votes tie
-- **Winnings Distribution**: Winners can withdraw their proportional share of the total bet pool
-- **Market Discovery**: Browse active and resolved markets with real-time probability calculations
-- **Fee Distribution**: 2.5% total fees split between platform (1.5%) and arbitrators (1%)
-- **Fair Arbitrator Compensation**: Only arbitrators who voted correctly receive fees
-- **Byzantine Fault Tolerance**: Markets resolve with simple majority, preventing single point of failure
-- **Consolidated Bet Display**: Multiple bets on same outcome are automatically grouped
-- **Potential Earnings Calculator**: Real-time calculation of potential payouts for active markets
-- **Withdrawal Tracking**: System tracks and prevents double-withdrawals
-- **Dynamic Pricing**: Market probabilities reflect betting volumes in real-time
-- **Market Categories**: Organize markets by 8 categories (Sports, Politics, Crypto, Weather, Entertainment, Science, Business, Other)
 - **Category Filtering**: Filter markets by category in Browse Markets and My Bets tabs
+- **Collusion Resistance**: Markets resolve with simple majority, preventing single arbitrator manipulation
+- **Consolidated Bet Display**: Multiple bets on same outcome are automatically grouped
+- **Draw Handling**: Automatic bet refunds (minus fees) when arbitrator votes tie
 - **Duplicate Outcome Prevention**: Smart contract and frontend validation prevents duplicate outcomes
+- **Dynamic Pricing**: Market probabilities reflect betting volumes in real-time
+- **Fair Arbitrator Compensation**: Only arbitrators who voted correctly receive fees
+- **Fee Distribution**: 2.5% total fees split between platform (1.5%) and arbitrators (1%)
+- **Market Creation**: Users can create new prediction markets with custom descriptions, outcomes, categories, and resolution times
+- **Market Categories**: Organize markets by 8 categories (Sports, Politics, Crypto, Weather, Entertainment, Science, Business, Other)
+- **Market Discovery**: Browse active and resolved markets with real-time probability calculations
+- **Multi-Arbitrator System**: Markets require 3-21 arbitrators for decentralized resolution
+- **Potential Earnings Calculator**: Real-time calculation of potential payouts for active markets
+- **Voting Mechanism**: Arbitrators vote on outcomes with simple majority consensus
+- **Winnings Distribution**: Winners can withdraw their proportional share of the total bet pool
+- **Withdrawal Tracking**: System tracks and prevents double-withdrawals
 
 ## 🏛 System Architecture & Design
 
@@ -241,7 +227,7 @@ When you're done testing:
 
 **Multi-Arbitrator Voting (3-21 arbitrators):**
 - Prevents single point of failure
-- Implements Byzantine fault tolerance through simple majority (>50%)
+- Multi-arbitrator voing with simple majority (>50%) prevents single point of failure and provides resilience against minority collusion
 - Economic incentives: only correct voters earn fees
 - Draw handling when votes tie (fair refunds for all)
 
@@ -250,11 +236,6 @@ When you're done testing:
 - Conflict of interest prevention (creators/arbitrators can't bet)
 - Double-withdrawal protection
 - Checks-Effects-Interactions pattern
-
-**Gas Optimizations:**
-- Early resolution when majority reached
-- Fees calculated once at resolution (not per withdrawal)
-- Basis points for precise fee calculations
 
 ## 🏗 Project Structure
 
@@ -274,7 +255,6 @@ prediction-market-dapp/
 ├── cache/                          # Hardhat cache
 ├── hardhat.config.js              # Hardhat configuration
 ├── package.json                   # Dependencies and scripts
-├── deployment.json                # Deployed contract addresses
 ├── TEST_ACCOUNTS.md               # Test account addresses and private keys (20 accounts)
 └── README.md                      # This file
 ```
@@ -328,17 +308,11 @@ Key parameters in the PredictionMarket contract:
 
 6. **Python server won't start**
    - Try `python3 -m http.server 8080` instead
-   - Or use Node.js: `npx http-server frontend -p 8080`
 
 7. **"Port 8545 already in use"**
    - Another process is using that port
    - Kill the process or restart your computer
    - On Windows: `netstat -ano | findstr :8545` then `taskkill /PID <process_id> /F`
-
-8. **Contract address keeps changing**
-   - This is normal when restarting the local blockchain
-   - The contract address is deterministic based on deployment order
-   - Usually stays the same if you deploy in the same sequence
 
 ## 📱 Usage
 
@@ -350,6 +324,7 @@ Key parameters in the PredictionMarket contract:
    - Description of the event to predict
    - Possible outcomes (2-10 options)
    - Resolution date and time
+   - Select Category of your market
    - Arbitrator address (who will resolve the market)
    - Creation fee (minimum 0.001 ETH)
 4. Submit transaction
@@ -392,7 +367,7 @@ Key parameters in the PredictionMarket contract:
 
 **How Fees Are Collected:**
 - 1% of every winning payout goes to the arbitrator fee pool
-- In draw scenarios, 1% of every refund contributes to the pool
+- In draw scenarios, 1% of every refund contributes to the arbitrator fee pool
 - Total collected fees are displayed transparently on resolved markets
 
 **Fee Distribution Rules:**
@@ -483,7 +458,7 @@ Key parameters in the PredictionMarket contract:
 
 - **ReentrancyGuard**: Protection against reentrancy attacks on withdrawals
 - **Access Control**: Role-based permissions using OpenZeppelin Ownable
-- **Input Validation**: Comprehensive validation of all parameters
+- **Input Validation**: Validation of all input parameters
 - **Safe Math**: Using Solidity 0.8+ built-in overflow protection
 - **Unique Arbitrators**: Prevents duplicate arbitrator addresses
 - **Conflict of Interest Prevention**: Market creators and arbitrators cannot bet on their own markets
@@ -492,7 +467,7 @@ Key parameters in the PredictionMarket contract:
 
 ### Fairness & Game Theory
 
-- **Byzantine Fault Tolerance**: Simple majority voting prevents single arbitrator manipulation
+- **Majority Voting**: Simple majority consensus (>50%) prevents single arbitrator manipulation and minority collusion
 - **Incentive Alignment**: Only correct voters earn fees, discouraging collusion
 - **Draw Handling**: Fair refunds when consensus cannot be reached
 - **No Free Riders**: Non-participating arbitrators receive no compensation
@@ -564,7 +539,6 @@ Key parameters in the PredictionMarket contract:
 
 - **Reputation System**: Track arbitrator accuracy and participation rates
 - **Oracle Integration**: Automatic resolution using Chainlink or other oracles
-- **NFT Certificates**: Issue NFTs to winners as proof of prediction accuracy
 - **Social Features**: Market comments and discussion threads
 - **Mobile App**: Native mobile application for iOS and Android
 - **Advanced Analytics**: Detailed market statistics and user insights
