@@ -227,6 +227,9 @@ When you're done testing:
 - **Potential Earnings Calculator**: Real-time calculation of potential payouts for active markets
 - **Withdrawal Tracking**: System tracks and prevents double-withdrawals
 - **Dynamic Pricing**: Market probabilities reflect betting volumes in real-time
+- **Market Categories**: Organize markets by 8 categories (Sports, Politics, Crypto, Weather, Entertainment, Science, Business, Other)
+- **Category Filtering**: Filter markets by category in Browse Markets and My Bets tabs
+- **Duplicate Outcome Prevention**: Smart contract and frontend validation prevents duplicate outcomes
 
 ## 🏛 System Architecture & Design
 
@@ -280,7 +283,7 @@ prediction-market-dapp/
 
 ### Network Configuration
 
-The project supports multiple networks (configured in `hardhat.config.js`):
+The project is deployed on local development network (configured in `hardhat.config.js`):
 
 - **Local Development**: Hardhat network (Chain ID: 31337)
 - **Localhost**: Local Hardhat node at `http://127.0.0.1:8545`
@@ -560,7 +563,6 @@ Key parameters in the PredictionMarket contract:
 ## 🚧 Future Enhancements
 
 - **Reputation System**: Track arbitrator accuracy and participation rates
-- **Market Categories**: Organize markets by topics (sports, politics, etc.)
 - **Oracle Integration**: Automatic resolution using Chainlink or other oracles
 - **NFT Certificates**: Issue NFTs to winners as proof of prediction accuracy
 - **Social Features**: Market comments and discussion threads
