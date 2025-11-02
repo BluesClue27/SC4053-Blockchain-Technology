@@ -15,6 +15,7 @@ A decentralized prediction market platform built on Ethereum that allows users t
 - [Smart Contract Functions](#-smart-contract-functions)
 - [Frontend Features](#-frontend-features)
 - [Security Features](#-security-features)
+- [Fee Distribution Examples](#-fee-distribution-examples)
 - [Future Enhancements](#-future-enhancements)
 - [References](#-references)
 
@@ -572,7 +573,6 @@ Key parameters in the PredictionMarket contract:
 - [Ethereum Documentation](https://ethereum.org/developers/)
 - [OpenZeppelin Contracts](https://docs.openzeppelin.com/contracts/)
 - [Hardhat Documentation](https://hardhat.org/docs/)
-- [Prediction Market Research](https://en.wikipedia.org/wiki/Prediction_market)
 - [Augur Protocol](https://www.augur.net/) - Decentralized prediction market platform
 - [Forepredict](https://forepredict.io/technology) - Modern prediction market implementation (design inspiration)
 - [Course GitHub Repository](https://github.com/BlockchainCourseNTU/resource/)
