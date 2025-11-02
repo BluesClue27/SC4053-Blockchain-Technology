@@ -896,40 +896,96 @@ async function loadMyBets() {
                     let hasWinningBet = false;
                     let totalWinningBetAmount = 0;
                     let potentialWinnings = 0;
+                    let isDraw = false;
+                    let totalUserBetsInDraw = 0;
 
                     if (market.resolved) {
-                        for (const bet of marketBets) {
-                            if (bet.outcome === market.winningOutcome) {
-                                hasWinningBet = true;
-                                totalWinningBetAmount += parseFloat(ethers.utils.formatEther(bet.amount));
+                        if (market.isDraw) {
+                            // Calculate total user bets for draw refund
+                            isDraw = true;
+                            for (const bet of marketBets) {
+                                totalUserBetsInDraw += parseFloat(ethers.utils.formatEther(bet.amount));
                             }
-                        }
 
-                        // Calculate potential winnings if user has winning bets
-                        if (hasWinningBet && market.totalBets > 0) {
-                            const winningPool = parseFloat(ethers.utils.formatEther(market.outcomeTotals[market.winningOutcome]));
-                            const totalPool = parseFloat(ethers.utils.formatEther(market.totalBets));
-                            const grossWinnings = (totalWinningBetAmount * totalPool) / winningPool;
-                            const platformFee = 250; // 2.5% in basis points
-                            const fee = (grossWinnings * platformFee) / 10000;
-                            potentialWinnings = grossWinnings - fee;
+                            if (totalUserBetsInDraw > 0) {
+                                const totalBetsEth = parseFloat(ethers.utils.formatEther(market.totalBets));
+                                if (totalBetsEth > 0) {
+                                    // Calculate refund (original bets minus fees: 1.5% platform + 1% arbitrator)
+                                    const platformFee = 150; // 1.5% in basis points
+                                    const arbitratorFee = 100; // 1% in basis points
+                                    const totalFeeRate = platformFee + arbitratorFee;
+                                    const fee = (totalUserBetsInDraw * totalFeeRate) / 10000;
+                                    potentialWinnings = totalUserBetsInDraw - fee;
+                                    hasWinningBet = true; // Set to true so we show the refund panel
+                                }
+                            }
+                        } else {
+                            // Normal resolution
+                            for (const bet of marketBets) {
+                                if (bet.outcome === market.winningOutcome) {
+                                    hasWinningBet = true;
+                                    totalWinningBetAmount += parseFloat(ethers.utils.formatEther(bet.amount));
+                                }
+                            }
+
+                            // Calculate potential winnings if user has winning bets
+                            if (hasWinningBet && market.totalBets > 0) {
+                                const winningPool = parseFloat(ethers.utils.formatEther(market.outcomeTotals[market.winningOutcome]));
+                                const totalPool = parseFloat(ethers.utils.formatEther(market.totalBets));
+                                const grossWinnings = (totalWinningBetAmount * totalPool) / winningPool;
+                                const platformFee = 150; // 1.5% in basis points
+                                const arbitratorFee = 100; // 1% in basis points
+                                const totalFeeRate = platformFee + arbitratorFee;
+                                const fee = (grossWinnings * totalFeeRate) / 10000;
+                                potentialWinnings = grossWinnings - fee;
+                            }
                         }
                     }
 
                     const betsListHTML = Object.values(betsByOutcome).map(outcomeData => {
-                        const isWinningBet = market.resolved && outcomeData.outcomeIndex === market.winningOutcome;
+                        // Convert to numbers for comparison (they might be BigNumber objects)
+                        const outcomeIdx = Number(outcomeData.outcomeIndex);
+                        const winningOutcomeNum = Number(market.winningOutcome);
+                        const isWinningBet = market.resolved && !market.isDraw && outcomeIdx === winningOutcomeNum;
                         const probability = (probabilities[outcomeData.outcomeIndex] / 100).toFixed(1);
 
-                        // Calculate potential earnings for active markets
+                        // Calculate potential earnings for active markets OR actual winnings for resolved markets
                         let potentialEarnings = 0;
+                        let actualWinnings = 0;
+
                         if (!market.resolved && market.totalBets > 0) {
+                            // Active market - show potential earnings
                             const outcomePool = parseFloat(ethers.utils.formatEther(market.outcomeTotals[outcomeData.outcomeIndex]));
                             const totalPool = parseFloat(ethers.utils.formatEther(market.totalBets));
                             if (outcomePool > 0) {
                                 const grossWinnings = (outcomeData.totalAmount * totalPool) / outcomePool;
-                                const platformFee = 250; // 2.5% in basis points
-                                const fee = (grossWinnings * platformFee) / 10000;
+                                const platformFee = 150; // 1.5% in basis points
+                                const arbitratorFee = 100; // 1% in basis points
+                                const totalFeeRate = platformFee + arbitratorFee;
+                                const fee = (grossWinnings * totalFeeRate) / 10000;
                                 potentialEarnings = grossWinnings - fee;
+                            }
+                        } else if (market.resolved && isWinningBet && market.totalBets > 0) {
+                            // Resolved market with winning bet - show actual winnings
+                            const winningPool = parseFloat(ethers.utils.formatEther(market.outcomeTotals[market.winningOutcome]));
+                            const totalPool = parseFloat(ethers.utils.formatEther(market.totalBets));
+                            if (winningPool > 0) {
+                                const grossWinnings = (outcomeData.totalAmount * totalPool) / winningPool;
+                                const platformFee = 150; // 1.5% in basis points
+                                const arbitratorFee = 100; // 1% in basis points
+                                const totalFeeRate = platformFee + arbitratorFee;
+                                const fee = (grossWinnings * totalFeeRate) / 10000;
+                                actualWinnings = grossWinnings - fee;
+                            }
+                        } else if (market.resolved && market.isDraw) {
+                            // Draw - show refund amount for this specific outcome
+                            const totalBetsEth = parseFloat(ethers.utils.formatEther(market.totalBets));
+                            if (totalBetsEth > 0) {
+                                const platformFee = 150; // 1.5% in basis points
+                                const arbitratorFee = 100; // 1% in basis points
+                                const totalFeeRate = platformFee + arbitratorFee;
+                                const fee = (outcomeData.totalAmount * totalFeeRate) / 10000;
+                                actualWinnings = outcomeData.totalAmount - fee;
                             }
                         }
 
@@ -951,50 +1007,86 @@ async function loadMyBets() {
                                         <div class="earnings-value">💰 ${potentialEarnings.toFixed(4)} ETH</div>
                                     </div>
                                 ` : ''}
+                                ${market.resolved && actualWinnings > 0 ? `
+                                    <div class="potential-earnings">
+                                        <div class="earnings-label">${market.isDraw ? 'Refund Amount:' : 'Winnings:'}</div>
+                                        <div class="earnings-value">💰 ${actualWinnings.toFixed(4)} ETH</div>
+                                    </div>
+                                ` : ''}
                             </div>
                         `;
                     }).join('');
 
-                    // Create winnings panel if market is resolved and user has winning bets
+                    // Create winnings panel if market is resolved and user has winning bets or draw
                     let winningsPanel = '';
-                    if (market.resolved && hasWinningBet) {
-                        // Check if user has already withdrawn
-                        const hasWithdrawn = await contract.hasUserWithdrawn(marketId, userAddress);
+                    if (market.resolved) {
+                        const totalBetsEth = parseFloat(ethers.utils.formatEther(market.totalBets));
 
-                        if (hasWithdrawn) {
+                        if (isDraw && totalUserBetsInDraw > 0 && totalBetsEth === 0) {
+                            // Draw with 0 ETH pool - show no ETH to withdraw message
                             winningsPanel = `
                                 <div class="winnings-panel withdrawn">
                                     <div class="winnings-header">
-                                        <span class="winnings-title">✅ Winnings Withdrawn</span>
+                                        <span class="winnings-title">ℹ️ No ETH to Withdraw</span>
                                     </div>
                                     <div class="winnings-details">
                                         <div class="winnings-amount">
-                                            <span class="winnings-label">Amount Withdrawn:</span>
-                                            <span class="winnings-value">${potentialWinnings.toFixed(4)} ETH</span>
+                                            <span class="winnings-label">Amount Available:</span>
+                                            <span class="winnings-value">0.0000 ETH</span>
                                         </div>
-                                    </div>
-                                </div>
-                            `;
-                        } else {
-                            winningsPanel = `
-                                <div class="winnings-panel">
-                                    <div class="winnings-header">
-                                        <span class="winnings-title">💰 Your Winnings</span>
-                                    </div>
-                                    <div class="winnings-details">
-                                        <div class="winnings-amount">
-                                            <span class="winnings-label">Potential Payout:</span>
-                                            <span class="winnings-value">${potentialWinnings.toFixed(4)} ETH</span>
-                                        </div>
-                                        <button class="btn btn-success" onclick="withdrawWinnings(${marketId})" style="margin-top: 10px;">
-                                            Withdraw Winnings
-                                        </button>
                                         <div class="winnings-note">
-                                            (After 2.5% total fees: 1.5% platform + 1% arbitrators)
+                                            (Market resolved as draw with no bet pool)
                                         </div>
                                     </div>
                                 </div>
                             `;
+                        } else if (hasWinningBet && potentialWinnings > 0) {
+                            // Check if user has already withdrawn
+                            const hasWithdrawn = await contract.hasUserWithdrawn(marketId, userAddress);
+
+                            if (hasWithdrawn) {
+                                const title = isDraw ? '✅ Refund Withdrawn' : '✅ Winnings Withdrawn';
+                                const label = isDraw ? 'Refund Amount:' : 'Amount Withdrawn:';
+                                winningsPanel = `
+                                    <div class="winnings-panel withdrawn">
+                                        <div class="winnings-header">
+                                            <span class="winnings-title">${title}</span>
+                                        </div>
+                                        <div class="winnings-details">
+                                            <div class="winnings-amount">
+                                                <span class="winnings-label">${label}</span>
+                                                <span class="winnings-value">${potentialWinnings.toFixed(4)} ETH</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                            } else {
+                                const title = isDraw ? '🔄 Your Refund' : '💰 Your Winnings';
+                                const buttonText = isDraw ? 'Withdraw Refund' : 'Withdraw Winnings';
+                                const note = isDraw
+                                    ? '(Your bets refunded minus 2.5% fees: 1.5% platform + 1% arbitrators)'
+                                    : '(After 2.5% total fees: 1.5% platform + 1% arbitrators)';
+
+                                winningsPanel = `
+                                    <div class="winnings-panel">
+                                        <div class="winnings-header">
+                                            <span class="winnings-title">${title}</span>
+                                        </div>
+                                        <div class="winnings-details">
+                                            <div class="winnings-amount">
+                                                <span class="winnings-label">Amount Available:</span>
+                                                <span class="winnings-value">${potentialWinnings.toFixed(4)} ETH</span>
+                                            </div>
+                                            <button class="btn btn-success" onclick="withdrawWinnings(${marketId})" style="margin-top: 10px;">
+                                                ${buttonText}
+                                            </button>
+                                            <div class="winnings-note">
+                                                ${note}
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                            }
                         }
                     }
 
