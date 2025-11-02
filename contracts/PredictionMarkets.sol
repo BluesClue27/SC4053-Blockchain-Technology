@@ -6,45 +6,57 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract PredictionMarket is ReentrancyGuard, Ownable {
 
-    enum Category {
-        SPORTS,
-        POLITICS,
-        CRYPTO,
-        WEATHER,
-        ENTERTAINMENT,
-        SCIENCE,
-        BUSINESS,
-        OTHER
-    }
+    // can add in categories for markets later
+    // enum Category {
+    //     SPORTS,
+    //     POLITICS,
+    //     CRYPTO,
+    //     WEATHER,
+    //     ENTERTAINMENT,
+    //     SCIENCE,
+    //     BUSINESS,
+    //     OTHER
+    // }
 
+    // Market struct containing all market state
     struct Market {
-        uint256 id;
-        string description;
-        string[] outcomes;
-        uint256 resolutionTime;
-        address creator;
-        address[] arbitrators;              // Multiple arbitrators
-        bool resolved;
-        uint256 winningOutcome;
-        uint256 totalBets;
-        mapping(uint256 => uint256) outcomeTotals; // outcome => total bet amount
-        mapping(address => mapping(uint256 => uint256)) userBets; // user => outcome => amount
+        uint256 id;                         
+        string description;                 
+        string[] outcomes;                  
+        uint256 resolutionTime;            
+        address creator;                    
+        address[] arbitrators;             
+        bool resolved;                     
+        uint256 winningOutcome;           
+        uint256 totalBets;                 
+
+        mapping(uint256 => uint256) outcomeTotals;
+
+        mapping(address => mapping(uint256 => uint256)) userBets;
+
         mapping(address => bool) hasWithdrawn;
-        uint256 createdAt;
-        bool exists;
-        Category category;                  // Market category
-        bool isDraw;                        // True if market ended in a tie
-        // Voting mechanism
+
+        uint256 createdAt;                 
+        bool exists;                       
+        // Category category;                 
+        bool isDraw;                       
+
         mapping(address => bool) hasVoted;
-        mapping(address => uint256) arbitratorVote; // arbitrator => outcome they voted for
-        mapping(uint256 => uint256) outcomeVotes;  // outcome => vote count
-        uint256 totalVotes;
-        uint256 requiredVotes;              // Minimum votes needed for majority
-        // Fee tracking
-        uint256 collectedArbitratorFees;    // Total arbitrator fees collected
-        mapping(address => bool) arbitratorFeeClaimed; // Track if arbitrator claimed their fee
+
+        mapping(address => uint256) arbitratorVote;
+
+        mapping(uint256 => uint256) outcomeVotes;
+
+        uint256 totalVotes;                
+        uint256 requiredVotes;             
+
+        uint256 collectedArbitratorFees;
+
+        mapping(address => bool) arbitratorFeeClaimed;
     }
     
+    // Return struct for getMarketInfo() - 
+    // cannot return Market struct directly due to mappings
     struct MarketInfo {
         uint256 id;
         string description;
@@ -55,28 +67,42 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         bool resolved;
         uint256 winningOutcome;
         uint256 totalBets;
-        uint256[] outcomeTotals;
+        uint256[] outcomeTotals;        
         uint256 createdAt;
         uint256 totalVotes;
         uint256 requiredVotes;
         bool isDraw;
     }
-    
+
+    // UserBet struct containing individual bet details
     struct UserBet {
-        uint256 marketId;
-        uint256 outcome;
-        uint256 amount;
-        uint256 timestamp;
+        uint256 marketId;               
+        uint256 outcome;               
+        uint256 amount;               
+        uint256 timestamp;             
     }
-    
+
     mapping(uint256 => Market) public markets;
-    mapping(address => uint256[]) public userMarkets; // markets created by user
-    mapping(address => UserBet[]) public userBets; // all bets by user
-    
+
+    mapping(address => uint256[]) public userMarkets;
+
+    mapping(address => UserBet[]) public userBets;
+
     uint256 public nextMarketId = 1;
-    uint256 public platformFee = 150; // 1.5% (out of 10000)
-    uint256 public arbitratorFee = 100; // 1.0% (out of 10000) - split among all arbitrators
+
+    /**
+     * Fee configuration in basis points (1 bp = 0.01%)
+     * Platform fee: 150 bp = 1.5% - goes to platform
+     * Arbitrator fee: 100 bp = 1.0% - split among eligible arbitrators
+     * Total fees: 250 bp = 2.5% deducted from total bet pool
+     */
+    uint256 public platformFee = 150;
+    uint256 public arbitratorFee = 100;
+
+    // Maximum number of outcomes per market
     uint256 public constant MAX_OUTCOMES = 10;
+
+    // Minimum time between market creation and resolution (1 minute - for testing purposes)
     uint256 public constant MIN_RESOLUTION_TIME = 1 minutes;
     
     event MarketCreated(
@@ -141,7 +167,8 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
     }
     
     constructor() Ownable(msg.sender) {}
-    
+
+    // Function to create new prediction market
     function createMarket(
         string memory _description,
         string[] memory _outcomes,
@@ -180,12 +207,8 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         newMarket.createdAt = block.timestamp;
         newMarket.exists = true;
 
-        // Calculate required votes: Simple majority (more than half)
-        // For 3 arbitrators: required=2 (2/3 = 67%)
-        // For 4 arbitrators: required=3 (3/4 = 75%)
-        // For 5 arbitrators: required=3 (3/5 = 60%)
-        // For 7 arbitrators: required=4 (4/7 = 57%)
-        newMarket.requiredVotes = (_arbitrators.length / 2) + 1; // Simple majority
+        // Required votes = simple majority
+        newMarket.requiredVotes = (_arbitrators.length / 2) + 1;
 
         userMarkets[msg.sender].push(marketId);
 
@@ -194,6 +217,7 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         return marketId;
     }
     
+    // Function to place bets
     function placeBet(uint256 _marketId, uint256 _outcome)
         external
         payable
@@ -226,6 +250,7 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         emit BetPlaced(_marketId, msg.sender, _outcome, msg.value);
     }
     
+    // Function for arbitrators to vote on outcome
     function voteOnOutcome(uint256 _marketId, uint256 _outcome)
         external
         validMarket(_marketId)
@@ -237,31 +262,33 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         require(_outcome < market.outcomes.length, "Invalid outcome");
         require(!market.hasVoted[msg.sender], "Already voted");
 
-        // Record the vote
         market.hasVoted[msg.sender] = true;
-        market.arbitratorVote[msg.sender] = _outcome; // Record what they voted for
+        market.arbitratorVote[msg.sender] = _outcome; 
         market.outcomeVotes[_outcome]++;
         market.totalVotes++;
 
         emit ArbitratorVoted(_marketId, msg.sender, _outcome);
 
-        // Check if we have enough votes to resolve
+        // Check if this vote creates a majority
+        // If it does, resolve the market immediately
         if (market.outcomeVotes[_outcome] >= market.requiredVotes) {
             market.resolved = true;
             market.winningOutcome = _outcome;
             market.isDraw = false;
 
-            // Calculate and set arbitrator fees immediately upon resolution
+            // Calculate arbitrator fees immediately (1% of total bet pool)
             uint256 totalArbitratorFees = (market.totalBets * arbitratorFee) / 10000;
             market.collectedArbitratorFees = totalArbitratorFees;
 
             emit MarketResolved(_marketId, _outcome, market.outcomeTotals[_outcome]);
-        } else if (market.totalVotes == market.arbitrators.length) {
-            // All arbitrators have voted, check for draw
+        } 
+        
+        else if (market.totalVotes == market.arbitrators.length) {
             _checkForDraw(_marketId);
         }
     }
 
+    // Function to check for draw or normal resolution
     function _checkForDraw(uint256 _marketId) internal {
         Market storage market = markets[_marketId];
 
@@ -276,24 +303,27 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
             }
         }
 
-        // If no single outcome has the required majority (n/2 + 1), it's a draw
+        // Draw condition: No single outcome reached majority threshold
+        // majority = n/2 + 1
         if (maxVotes < market.requiredVotes) {
             market.resolved = true;
             market.isDraw = true;
-            market.winningOutcome = 0; // Doesn't matter for draws
+            market.winningOutcome = 0; 
 
-            // Calculate and set arbitrator fees immediately upon resolution (draw scenario)
+            // Calculate total arbitrator fees (1% of total bet pool)
+            // Draw scenario: fees are split among ALL arbitrators who voted
             uint256 totalArbitratorFees = (market.totalBets * arbitratorFee) / 10000;
             market.collectedArbitratorFees = totalArbitratorFees;
 
-            emit MarketResolved(_marketId, 0, 0); // 0 indicates draw
+            emit MarketResolved(_marketId, 0, 0);
         } else {
-            // One outcome has the required majority - resolve normally
+            // NORMAL RESOLUTION: One outcome reached majority threshold
             market.resolved = true;
             market.winningOutcome = outcomeWithMaxVotes;
             market.isDraw = false;
 
-            // Calculate and set arbitrator fees immediately upon resolution
+            // Calculate total arbitrator fees (1% of total bet pool)
+            // Normal scenario: fees only go to arbitrators who voted for winning outcome
             uint256 totalArbitratorFees = (market.totalBets * arbitratorFee) / 10000;
             market.collectedArbitratorFees = totalArbitratorFees;
 
@@ -301,6 +331,34 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         }
     }
 
+    /**
+     * Function to withdraw winnings or refunds after market resolution
+     * 
+     * TWO DISTINCT WITHDRAWAL SCENARIOS:
+     *
+     * 1. DRAW SCENARIO (market.isDraw == true):
+     * User gets refunded ALL their bets across all outcomes
+     * Fees (2.5%) are still deducted from refund
+     * Refund = totalUserBets * (100% - 2.5%)
+     *
+     * 2. NORMAL WIN SCENARIO (market.isDraw == false):
+     * Only users who bet on winning outcome can withdraw
+     * Winnings are proportional to bet amount
+     * Winnings = (userBet / winningPool) * totalPool * (100% - 2.5%)
+     *
+     * PROPORTIONAL PAYOUT EXAMPLE:
+     * Total pool: 100 ETH
+     * Winning outcome pool: 40 ETH
+     * User bet on winner: 10 ETH
+     * Gross winnings: (10 / 40) * 100 = 25 ETH
+     * Fees (2.5%): 0.625 ETH
+     * Net payout: 24.375 ETH
+     *
+     * SECURITY:
+     * hasWithdrawn check prevents double withdrawals
+     * nonReentrant prevents reentrancy attacks
+     * Marked withdrawn BEFORE transfer (checks-effects-interactions pattern)
+     */
     function withdrawWinnings(uint256 _marketId)
         external
         validMarket(_marketId)
@@ -310,9 +368,10 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         require(market.resolved, "Market not yet resolved");
         require(!market.hasWithdrawn[msg.sender], "Already withdrawn");
 
+        // Mark as withdrawn BEFORE transfer to prevent reentrancy
         market.hasWithdrawn[msg.sender] = true;
 
-        // Handle draw scenario - refund all bets minus fees
+        // Draw Scenario: Refund all bets across all outcomes
         if (market.isDraw) {
             uint256 totalUserBets = 0;
             for (uint256 i = 0; i < market.outcomes.length; i++) {
@@ -320,13 +379,12 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
             }
             require(totalUserBets > 0, "No bets found");
 
-            // Deduct fees from refund
             uint256 refund = (totalUserBets * (10000 - platformFee - arbitratorFee)) / 10000;
 
-            // Collect platform fee (arbitrator fee already calculated at resolution)
             uint256 drawPlatformCut = (totalUserBets * platformFee) / 10000;
 
             payable(msg.sender).transfer(refund);
+
             if (drawPlatformCut > 0) {
                 payable(owner()).transfer(drawPlatformCut);
             }
@@ -335,23 +393,21 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
             return;
         }
 
-        // Normal resolution - pay winners
+        // Normal Scenario: Withdraw winnings for winning outcome
         uint256 userWinningBet = market.userBets[msg.sender][market.winningOutcome];
         require(userWinningBet > 0, "No winning bet found");
 
         uint256 winningPool = market.outcomeTotals[market.winningOutcome];
         uint256 totalPool = market.totalBets;
 
-        // Calculate proportional winnings
         uint256 winnings = (userWinningBet * totalPool) / winningPool;
 
-        // Deduct platform and arbitrator fees
         uint256 payout = (winnings * (10000 - platformFee - arbitratorFee)) / 10000;
 
-        // Collect platform fee (arbitrator fee already calculated at resolution)
         uint256 platformCut = (winnings * platformFee) / 10000;
 
         payable(msg.sender).transfer(payout);
+
         if (platformCut > 0) {
             payable(owner()).transfer(platformCut);
         }
@@ -359,6 +415,7 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         emit Withdrawal(_marketId, msg.sender, payout);
     }
 
+    // Function for arbitrators to claim their fee share after market resolution
     function claimArbitratorFee(uint256 _marketId)
         external
         validMarket(_marketId)
@@ -368,11 +425,9 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         require(market.resolved, "Market not yet resolved");
         require(!market.arbitratorFeeClaimed[msg.sender], "Fee already claimed");
 
-        // Check if sender is an arbitrator and is eligible
         require(_isArbitrator(_marketId, msg.sender), "Not an arbitrator");
         require(_isEligibleForFee(_marketId, msg.sender), "Not eligible for fee - did not vote or voted incorrectly");
 
-        // Calculate eligible count and share
         uint256 eligibleCount = _countEligibleArbitrators(_marketId);
         require(eligibleCount > 0, "No eligible arbitrators");
 
@@ -386,6 +441,7 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         emit ArbitratorFeeClaimed(_marketId, msg.sender, arbitratorShare);
     }
 
+    // Check if address is an arbitrator for the market
     function _isArbitrator(uint256 _marketId, address _address) internal view returns (bool) {
         Market storage market = markets[_marketId];
         for (uint256 i = 0; i < market.arbitrators.length; i++) {
@@ -396,16 +452,35 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         return false;
     }
 
+    /**
+     * Function to check if an arbitrator is eligible for fee share
+     * 
+     * DRAW SCENARIO:
+     * ALL arbitrators who voted are eligible (regardless of what they voted for)
+     * Rationale: No single outcome was "correct", so all participants deserve compensation
+     * Example: 3 arbitrators vote (1-1-1 split) → all 3 eligible
+     *
+     * NORMAL RESOLUTION:
+     * ONLY arbitrators who voted for the WINNING outcome are eligible
+     * Rationale: Incentivizes honest/accurate voting
+     * Example: 5 arbitrators, 3 vote "Yes" (winner), 2 vote "No" → only the 3 eligible
+     *
+     * NON-VOTERS:
+     * Arbitrators who didn't vote get NOTHING in either scenario
+     * Prevents free-riding and encourages participation
+     */
     function _isEligibleForFee(uint256 _marketId, address _arbitrator) internal view returns (bool) {
         Market storage market = markets[_marketId];
 
         if (market.isDraw) {
             return market.hasVoted[_arbitrator];
-        } else {
+        } 
+        else {
             return market.hasVoted[_arbitrator] && market.arbitratorVote[_arbitrator] == market.winningOutcome;
         }
     }
 
+    // Function to count eligible arbitrators for fee distribution
     function _countEligibleArbitrators(uint256 _marketId) internal view returns (uint256) {
         Market storage market = markets[_marketId];
         uint256 count = 0;
@@ -426,6 +501,7 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         return count;
     }
 
+    // View function to get Market Info
     function getMarketInfo(uint256 _marketId) 
         external 
         view 
@@ -457,6 +533,7 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         });
     }
     
+    // View function to get user's bet amount on a specific outcome
     function getUserBetAmount(uint256 _marketId, address _user, uint256 _outcome) 
         external 
         view 
@@ -466,6 +543,7 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         return markets[_marketId].userBets[_user][_outcome];
     }
     
+    // View function to get outcome probabilities based on current bets
     function getOutcomeProbabilities(uint256 _marketId) 
         external 
         view 
@@ -476,26 +554,29 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         probabilities = new uint256[](market.outcomes.length);
         
         if (market.totalBets == 0) {
-            // Equal probability if no bets
             uint256 equalProb = 10000 / market.outcomes.length;
             for (uint256 i = 0; i < market.outcomes.length; i++) {
                 probabilities[i] = equalProb;
             }
-        } else {
+        } 
+        else {
             for (uint256 i = 0; i < market.outcomes.length; i++) {
                 probabilities[i] = (market.outcomeTotals[i] * 10000) / market.totalBets;
             }
         }
     }
     
+    // View function to get all bets placed by a user
     function getUserBets(address _user) external view returns (UserBet[] memory) {
         return userBets[_user];
     }
 
+    // View function to get all markets created by a user
     function getUserMarkets(address _user) external view returns (uint256[] memory) {
         return userMarkets[_user];
     }
 
+    // View function to check if an arbitrator has voted
     function hasArbitratorVoted(uint256 _marketId, address _arbitrator)
         external
         view
@@ -505,6 +586,7 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         return markets[_marketId].hasVoted[_arbitrator];
     }
 
+    // View function to check if a user has withdrawn winnings/refund
     function hasUserWithdrawn(uint256 _marketId, address _user)
         external
         view
@@ -514,6 +596,7 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         return markets[_marketId].hasWithdrawn[_user];
     }
 
+    // View function to get arbitrator fee info
     function getArbitratorFeeInfo(uint256 _marketId, address _arbitrator)
         external
         view
@@ -541,6 +624,7 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         potentialShare = (isEligible && eligibleCount > 0) ? totalCollectedFees / eligibleCount : 0;
     }
 
+    // View function to get detailed arbitrator vote info for a market
     function getArbitratorVoteDetails(uint256 _marketId)
         external
         view
@@ -569,17 +653,17 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         }
     }
 
+    // View function to get all active markets 
     function getAllActiveMarkets() external view returns (uint256[] memory activeMarkets) {
         uint256 activeCount = 0;
 
-        // Count active markets (including those awaiting arbitrator votes)
+        // Count active markets 
         for (uint256 i = 1; i < nextMarketId; i++) {
             if (markets[i].exists && !markets[i].resolved) {
                 activeCount++;
             }
         }
 
-        // Fill array
         activeMarkets = new uint256[](activeCount);
         uint256 index = 0;
         for (uint256 i = 1; i < nextMarketId; i++) {
@@ -590,6 +674,7 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         }
     }
     
+    // View function to get all resolved markets
     function getAllResolvedMarkets() external view returns (uint256[] memory resolvedMarkets) {
         uint256 resolvedCount = 0;
         
@@ -599,8 +684,7 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
                 resolvedCount++;
             }
         }
-        
-        // Fill array
+
         resolvedMarkets = new uint256[](resolvedCount);
         uint256 index = 0;
         for (uint256 i = 1; i < nextMarketId; i++) {
@@ -611,16 +695,19 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         }
     }
     
+    // Owner-only functions to adjust fees
     function setPlatformFee(uint256 _newFee) external onlyOwner {
-        require(_newFee <= 1000, "Fee cannot exceed 10%"); // Max 10%
+        require(_newFee <= 1000, "Fee cannot exceed 10%"); 
         platformFee = _newFee;
     }
 
+    // Owner-only function to adjust arbitrator fee
     function setArbitratorFee(uint256 _newFee) external onlyOwner {
-        require(_newFee <= 500, "Arbitrator fee cannot exceed 5%"); // Max 5%
+        require(_newFee <= 500, "Arbitrator fee cannot exceed 5%"); 
         arbitratorFee = _newFee;
     }
 
+    // Emergency withdrawal function for owner to recover funds
     function emergencyWithdraw() external onlyOwner {
         payable(owner()).transfer(address(this).balance);
     }
