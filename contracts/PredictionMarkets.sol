@@ -265,23 +265,19 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
     function _checkForDraw(uint256 _marketId) internal {
         Market storage market = markets[_marketId];
 
-        // Find the maximum votes any outcome received
+        // Find the outcome with the maximum votes
         uint256 maxVotes = 0;
         uint256 outcomeWithMaxVotes = 0;
-        uint256 outcomesWithMaxVotes = 0;
 
         for (uint256 i = 0; i < market.outcomes.length; i++) {
             if (market.outcomeVotes[i] > maxVotes) {
                 maxVotes = market.outcomeVotes[i];
                 outcomeWithMaxVotes = i;
-                outcomesWithMaxVotes = 1;
-            } else if (market.outcomeVotes[i] == maxVotes && maxVotes > 0) {
-                outcomesWithMaxVotes++;
             }
         }
 
-        // If multiple outcomes have the same max votes, it's a draw
-        if (outcomesWithMaxVotes > 1) {
+        // If no single outcome has the required majority (n/2 + 1), it's a draw
+        if (maxVotes < market.requiredVotes) {
             market.resolved = true;
             market.isDraw = true;
             market.winningOutcome = 0; // Doesn't matter for draws
@@ -291,6 +287,17 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
             market.collectedArbitratorFees = totalArbitratorFees;
 
             emit MarketResolved(_marketId, 0, 0); // 0 indicates draw
+        } else {
+            // One outcome has the required majority - resolve normally
+            market.resolved = true;
+            market.winningOutcome = outcomeWithMaxVotes;
+            market.isDraw = false;
+
+            // Calculate and set arbitrator fees immediately upon resolution
+            uint256 totalArbitratorFees = (market.totalBets * arbitratorFee) / 10000;
+            market.collectedArbitratorFees = totalArbitratorFees;
+
+            emit MarketResolved(_marketId, outcomeWithMaxVotes, market.outcomeTotals[outcomeWithMaxVotes]);
         }
     }
 
