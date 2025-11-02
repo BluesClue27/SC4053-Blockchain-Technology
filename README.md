@@ -93,9 +93,9 @@ Hardhat provides 20 pre-funded test accounts (each with 10,000 ETH). You need to
 
 **Quick Import - First Account:**
 
-1. In MetaMask, click the account avatar (top right)
-2. Select "Import Account"
-3. Select "Private Key" as import method
+1. In MetaMask, click the account drop down menu (top left)
+2. Select "Add wallet"
+3. Select "Import an account"
 4. **Paste this private key:** `0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80`
 5. Click "Import"
 
