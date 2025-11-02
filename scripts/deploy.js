@@ -90,8 +90,7 @@ async function main() {
     );
 
     fs.writeFileSync(frontendPath, frontendCode);
-    console.log("✅ Frontend updated with new contract address!");
-    console.log("\n⚠️  IMPORTANT: Hard refresh your browser (Ctrl+Shift+R) to clear cache!");
+    console.log("Frontend updated with new contract address!");
 }
 
 main()
