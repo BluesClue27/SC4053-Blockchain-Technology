@@ -29,7 +29,7 @@ A decentralized prediction market platform built on Ethereum that allows users t
    npm install
    ```
 3. **Configure MetaMask:** Add network with RPC `http://127.0.0.1:8545`, Chain ID `31337`
-4. **Import test accounts:** Import at least 4 accounts (1 main + 3 arbitrators) - See [TEST_ACCOUNTS.md](./TEST_ACCOUNTS.md) for all 20 available accounts
+4. **Import test accounts:** Import at least 5 accounts (1 creator + 3 arbitrators + 1 bettor) - See [TEST_ACCOUNTS.md](./TEST_ACCOUNTS.md) for all 20 available accounts
 5. **Start blockchain (Terminal 1):** `npm run node`
 6. **Deploy contract (Terminal 2):** `npm run deploy:localhost`
 7. **Start frontend (Terminal 3):** `cd frontend && python -m http.server 8080`
