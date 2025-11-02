@@ -7,7 +7,7 @@ A decentralized prediction market platform built on Ethereum that allows users t
 - [Quick Start](#-quick-start)
 - [First-Time Setup Guide](#-first-time-setup-guide)
 - [Features](#-features)
-- [Architecture & Design](#-architecture--design)
+- [System Architecture & Design](#-system-architecture--design)
 - [Project Structure](#-project-structure)
 - [Configuration](#-configuration)
 - [Troubleshooting](#-troubleshooting)
@@ -227,28 +227,11 @@ When you're done testing:
 - **Withdrawal Tracking**: System tracks and prevents double-withdrawals
 - **Dynamic Pricing**: Market probabilities reflect betting volumes in real-time
 
-## 🏛 Architecture & Design
+## 🏛 System Architecture & Design
 
-### Documentation
+### System Architecture Diagram
 
-For detailed information about the system design and implementation:
-
-- **[Architecture Diagram](./docs/ARCHITECTURE.md)** - Complete system architecture with:
-  - Component interaction diagrams
-  - User role workflows (Creator, Bettor, Arbitrator)
-  - Market lifecycle flow
-  - Voting resolution logic with examples
-  - Fee distribution flows
-  - Security mechanism explanations
-
-- **[Design Decisions](./docs/DESIGN_DECISIONS.md)** - Comprehensive explanation of:
-  - **Why Multi-Arbitrator System?** (vs single arbitrator or oracles)
-  - Byzantine Fault Tolerance implementation
-  - Draw handling mechanism with examples
-  - Fee distribution model rationale
-  - Security considerations (reentrancy, conflicts of interest)
-  - Gas optimization strategies
-  - Alternative approaches considered and why they weren't chosen
+![Architecture Diagram](./images/architecure_diagram.png)
 
 ### Key Design Highlights
 
@@ -274,7 +257,7 @@ For detailed information about the system design and implementation:
 ```
 prediction-market-dapp/
 ├── contracts/
-│   └── PredictionMarket.sol       # Main smart contract (with detailed comments)
+│   └── PredictionMarket.sol       # Main smart contract
 ├── scripts/
 │   └── deploy.js                  # Deployment script
 ├── frontend/
@@ -283,9 +266,6 @@ prediction-market-dapp/
 │   │   └── styles.css             # Application styles
 │   └── js/
 │       └── app.js                 # Frontend JavaScript logic
-├── docs/
-│   ├── ARCHITECTURE.md            # System architecture diagrams and flows
-│   └── DESIGN_DECISIONS.md        # Design rationale and alternatives
 ├── artifacts/                      # Compiled contract artifacts
 ├── cache/                          # Hardhat cache
 ├── hardhat.config.js              # Hardhat configuration
