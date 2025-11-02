@@ -2,9 +2,9 @@
 const CONTRACT_ADDRESS = '0x5FbDB2315678afecb367f032d93F642f64180aa3'; // Replace with deployed contract address
 const CONTRACT_ABI = [
     // Add your contract ABI here
-    "function createMarket(string memory _description, string[] memory _outcomes, uint256 _resolutionTime, address[] memory _arbitrators) external payable returns (uint256)",
+    "function createMarket(string memory _description, string[] memory _outcomes, uint256 _resolutionTime, address[] memory _arbitrators, uint8 _category) external payable returns (uint256)",
     "function placeBet(uint256 _marketId, uint256 _outcome) external payable",
-    "function getMarketInfo(uint256 _marketId) external view returns (tuple(uint256 id, string description, string[] outcomes, uint256 resolutionTime, address creator, address[] arbitrators, bool resolved, uint256 winningOutcome, uint256 totalBets, uint256[] outcomeTotals, uint256 createdAt, uint256 totalVotes, uint256 requiredVotes, bool isDraw))",
+    "function getMarketInfo(uint256 _marketId) external view returns (tuple(uint256 id, string description, string[] outcomes, uint256 resolutionTime, address creator, address[] arbitrators, bool resolved, uint256 winningOutcome, uint256 totalBets, uint256[] outcomeTotals, uint256 createdAt, uint256 totalVotes, uint256 requiredVotes, bool isDraw, uint8 category))",
     "function hasUserWithdrawn(uint256 _marketId, address _user) external view returns (bool)",
     "function claimArbitratorFee(uint256 _marketId) external",
     "function getAllActiveMarkets() external view returns (uint256[] memory)",
@@ -22,6 +22,83 @@ const CONTRACT_ABI = [
 let provider, signer, contract, userAddress;
 let selectedOutcome = null;
 let selectedMarketId = null;
+
+// Category mapping
+const CATEGORIES = {
+    0: 'Sports',
+    1: 'Politics',
+    2: 'Crypto',
+    3: 'Weather',
+    4: 'Entertainment',
+    5: 'Science',
+    6: 'Business',
+    7: 'Other'
+};
+
+// Global variables to store all markets for filtering
+let allActiveMarkets = [];
+let allResolvedMarkets = [];
+let allMyBetsMarkets = [];
+
+// Helper function to get category name
+function getCategoryName(categoryId) {
+    return CATEGORIES[categoryId] || 'Unknown';
+}
+
+// Helper function to get category badge HTML
+function getCategoryBadge(categoryId) {
+    const categoryName = getCategoryName(categoryId);
+    const colors = {
+        'Sports': '#4CAF50',
+        'Politics': '#2196F3',
+        'Crypto': '#FF9800',
+        'Weather': '#00BCD4',
+        'Entertainment': '#E91E63',
+        'Science': '#9C27B0',
+        'Business': '#607D8B',
+        'Other': '#795548'
+    };
+    const color = colors[categoryName] || '#9E9E9E';
+    return `<span style="display: inline-block; padding: 4px 12px; background: ${color}; color: white; border-radius: 12px; font-size: 12px; font-weight: 600; margin-left: 10px;">${categoryName}</span>`;
+}
+
+// Filter markets by category
+function filterMarkets(section) {
+    let filterId, containerId, markets;
+
+    if (section === 'active') {
+        filterId = 'activeMarketsFilter';
+        containerId = 'activeMarkets';
+        markets = allActiveMarkets;
+    } else if (section === 'resolved') {
+        filterId = 'resolvedMarketsFilter';
+        containerId = 'resolvedMarkets';
+        markets = allResolvedMarkets;
+    } else if (section === 'my-bets') {
+        filterId = 'myBetsFilter';
+        containerId = 'myBets';
+        markets = allMyBetsMarkets;
+    }
+
+    const selectedCategory = document.getElementById(filterId).value;
+    const container = document.getElementById(containerId);
+
+    // Filter markets by category
+    const filteredMarkets = selectedCategory === ''
+        ? markets
+        : markets.filter(marketHTML => {
+            // Extract category from the data attribute in the HTML
+            const match = marketHTML.match(/data-category="(\d+)"/);
+            return match && match[1] === selectedCategory;
+        });
+
+    // Display filtered markets
+    if (filteredMarkets.length === 0) {
+        container.innerHTML = '<p class="empty-message">No markets found in this category.</p>';
+    } else {
+        container.innerHTML = filteredMarkets.join('');
+    }
+}
 
 // Initialize the app
 window.addEventListener('load', async () => {
@@ -136,6 +213,7 @@ async function createMarket(event) {
         const resolutionTime = new Date(document.getElementById('resolutionTime').value).getTime() / 1000;
         const arbitratorsInput = document.getElementById('arbitrators').value;
         const creationFee = document.getElementById('creationFee').value;
+        const category = parseInt(document.getElementById('category').value);
 
         // Parse arbitrators (comma-separated addresses)
         const arbitrators = arbitratorsInput
@@ -177,6 +255,7 @@ async function createMarket(event) {
             outcomes,
             resolutionTime,
             arbitrators,
+            category,
             { value: ethers.utils.parseEther(creationFee) }
         );
 
@@ -256,6 +335,9 @@ async function loadActiveMarkets() {
                 return renderMarketCard(market, probabilities, 'active', null, false, arbitratorHasVoted);
             })
         );
+
+        // Store for filtering
+        allActiveMarkets = marketsHTML;
 
         marketsContainer.innerHTML = marketsHTML.join('');
 
@@ -365,6 +447,9 @@ async function loadResolvedMarkets() {
                 return renderMarketCard(market, probabilities, 'resolved', userWinnings, userHasLost, false, userHasWithdrawn, arbitratorFeeInfo);
             })
         );
+
+        // Store for filtering
+        allResolvedMarkets = marketsHTML;
 
         marketsContainer.innerHTML = marketsHTML.join('');
 
@@ -527,7 +612,8 @@ function renderMarketCard(market, probabilities, status, userWinnings = null, us
                         </div>
                     </div>
                 `;
-            } else {
+            } else if (feeAmount > 0) {
+                // Show claimable fee with green section and button
                 const totalExpectedFees = (parseFloat(ethers.utils.formatEther(market.totalBets)) * 100) / 10000;
 
                 arbitratorFeeHTML = `
@@ -538,6 +624,20 @@ function renderMarketCard(market, probabilities, status, userWinnings = null, us
                             <span class="winnings-note">(Your share: 1 of ${arbitratorFeeInfo.eligibleCount} eligible arbitrators from ${totalExpectedFees.toFixed(4)} ETH total)</span>
                         </div>
                         <button class="btn btn-success" onclick="claimArbitratorFee(${market.id})">Claim Arbitrator Fee</button>
+                    </div>
+                `;
+            } else {
+                // feeAmount is 0 - show informational message (no button)
+                arbitratorFeeHTML = `
+                    <div class="withdrawn-section">
+                        <div class="withdrawn-info">
+                            <span class="withdrawn-icon">ℹ️</span>
+                            <span class="withdrawn-message">No Arbitrator Fee Available</span>
+                            <span class="withdrawn-amount">0.0000 ETH</span>
+                        </div>
+                        <div class="winnings-note" style="text-align: center; margin-top: 8px;">
+                            (No bets were placed on this market)
+                        </div>
                     </div>
                 `;
             }
@@ -568,9 +668,9 @@ function renderMarketCard(market, probabilities, status, userWinnings = null, us
     }
 
     return `
-        <div class="market-card">
+        <div class="market-card" data-category="${market.category}">
             <div class="market-header">
-                <div class="market-title">${market.description}</div>
+                <div class="market-title">${market.description}${getCategoryBadge(market.category)}</div>
                 <div class="market-status ${statusClass}">${statusText}</div>
             </div>
 
@@ -899,9 +999,9 @@ async function loadMyBets() {
                     }
 
                     return `
-                        <div class="market-card">
+                        <div class="market-card" data-category="${market.category}">
                             <div class="market-header">
-                                <div class="market-title">${market.description}</div>
+                                <div class="market-title">${market.description}${getCategoryBadge(market.category)}</div>
                                 <div class="market-status ${market.resolved ? (market.isDraw ? 'status-draw' : 'status-resolved') : 'status-active'}">
                                     ${market.resolved ? (market.isDraw ? 'Draw - Bets Refunded' : `Resolved: ${market.outcomes[market.winningOutcome]}`) : 'Active'}
                                 </div>
@@ -920,6 +1020,9 @@ async function loadMyBets() {
                 }
             })
         );
+
+        // Store for filtering
+        allMyBetsMarkets = betsHTML;
 
         betsContainer.innerHTML = betsHTML.join('');
 

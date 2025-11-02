@@ -42,11 +42,13 @@ async function main() {
 
     console.log("Using arbitrators:", arbitrators);
 
+    // Category: 2 = CRYPTO (0=SPORTS, 1=POLITICS, 2=CRYPTO, 3=WEATHER, 4=ENTERTAINMENT, 5=SCIENCE, 6=BUSINESS, 7=OTHER)
     const tx = await predictionMarket.createMarket(
         "Will Bitcoin reach $100,000 by the end of 2025?",
         ["Yes", "No", "Uncertain"],
         resolutionTime,
         arbitrators,
+        2, // CRYPTO category
         { value: hre.ethers.parseEther("0.001") }
     );
 

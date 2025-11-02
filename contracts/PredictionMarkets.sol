@@ -6,17 +6,16 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract PredictionMarket is ReentrancyGuard, Ownable {
 
-    // can add in categories for markets later
-    // enum Category {
-    //     SPORTS,
-    //     POLITICS,
-    //     CRYPTO,
-    //     WEATHER,
-    //     ENTERTAINMENT,
-    //     SCIENCE,
-    //     BUSINESS,
-    //     OTHER
-    // }
+    enum Category {
+        SPORTS,
+        POLITICS,
+        CRYPTO,
+        WEATHER,
+        ENTERTAINMENT,
+        SCIENCE,
+        BUSINESS,
+        OTHER
+    }
 
     // Market struct containing all market state
     struct Market {
@@ -38,7 +37,7 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
 
         uint256 createdAt;                 
         bool exists;                       
-        // Category category;                 
+        Category category;                 
         bool isDraw;                       
 
         mapping(address => bool) hasVoted;
@@ -55,7 +54,7 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         mapping(address => bool) arbitratorFeeClaimed;
     }
     
-    // Return struct for getMarketInfo() - 
+    // Return struct for getMarketInfo() -
     // cannot return Market struct directly due to mappings
     struct MarketInfo {
         uint256 id;
@@ -67,11 +66,12 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         bool resolved;
         uint256 winningOutcome;
         uint256 totalBets;
-        uint256[] outcomeTotals;        
+        uint256[] outcomeTotals;
         uint256 createdAt;
         uint256 totalVotes;
         uint256 requiredVotes;
         bool isDraw;
+        Category category;
     }
 
     // UserBet struct containing individual bet details
@@ -173,7 +173,8 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         string memory _description,
         string[] memory _outcomes,
         uint256 _resolutionTime,
-        address[] memory _arbitrators
+        address[] memory _arbitrators,
+        Category _category
     ) external payable returns (uint256) {
         require(bytes(_description).length > 0, "Description cannot be empty");
         require(_outcomes.length >= 2 && _outcomes.length <= MAX_OUTCOMES, "Invalid number of outcomes");
@@ -206,6 +207,7 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
         newMarket.totalBets = 0;
         newMarket.createdAt = block.timestamp;
         newMarket.exists = true;
+        newMarket.category = _category;
 
         // Required votes = simple majority
         newMarket.requiredVotes = (_arbitrators.length / 2) + 1;
@@ -529,7 +531,8 @@ contract PredictionMarket is ReentrancyGuard, Ownable {
             createdAt: market.createdAt,
             totalVotes: market.totalVotes,
             requiredVotes: market.requiredVotes,
-            isDraw: market.isDraw
+            isDraw: market.isDraw,
+            category: market.category
         });
     }
     

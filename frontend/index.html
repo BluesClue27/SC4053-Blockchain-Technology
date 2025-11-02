@@ -40,15 +40,44 @@
         <!-- Browse Markets Tab -->
         <div id="markets-tab" class="tab-content active">
             <div class="card">
-                <h2>Active Markets</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="margin: 0;">Active Markets</h2>
+                    <div class="form-group" style="margin: 0; min-width: 200px;">
+                        <select id="activeMarketsFilter" onchange="filterMarkets('active')">
+                            <option value="">All Categories</option>
+                            <option value="0">Sports</option>
+                            <option value="1">Politics</option>
+                            <option value="2">Crypto</option>
+                            <option value="3">Weather</option>
+                            <option value="4">Entertainment</option>
+                            <option value="5">Science</option>
+                            <option value="6">Business</option>
+                            <option value="7">Other</option>
+                        </select>
+                    </div>
+                </div>
                 <div id="activeMarkets" class="loading">Loading active markets...</div>
             </div>
             <div class="card">
-                <h2>Resolved Markets</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="margin: 0;">Resolved Markets</h2>
+                    <div class="form-group" style="margin: 0; min-width: 200px;">
+                        <select id="resolvedMarketsFilter" onchange="filterMarkets('resolved')">
+                            <option value="">All Categories</option>
+                            <option value="0">Sports</option>
+                            <option value="1">Politics</option>
+                            <option value="2">Crypto</option>
+                            <option value="3">Weather</option>
+                            <option value="4">Entertainment</option>
+                            <option value="5">Science</option>
+                            <option value="6">Business</option>
+                            <option value="7">Other</option>
+                        </select>
+                    </div>
+                </div>
                 <div id="resolvedMarkets" class="loading">Loading resolved markets...</div>
             </div>
         </div>
-
         <!-- Create Market Tab -->
         <div id="create-tab" class="tab-content">
             <div class="card">
@@ -80,6 +109,21 @@
                     </div>
 
                     <div class="form-group">
+                        <label for="category">Category</label>
+                        <select id="category" required>
+                            <option value="0">Sports</option>
+                            <option value="1">Politics</option>
+                            <option value="2" selected>Crypto</option>
+                            <option value="3">Weather</option>
+                            <option value="4">Entertainment</option>
+                            <option value="5">Science</option>
+                            <option value="6">Business</option>
+                            <option value="7">Other</option>
+                        </select>
+                        <small>Select the category that best describes your market</small>
+                    </div>
+
+                    <div class="form-group">
                         <label for="arbitrators">Arbitrator Addresses (comma-separated)</label>
                         <textarea id="arbitrators" rows="3" placeholder="0x123..., 0x456..., 0x789..." required></textarea>
                         <small>Minimum 3 arbitrators, maximum 21. Separate addresses with commas. These trusted parties will vote to resolve the market. If votes tie, market is declared a draw and bets are refunded.</small>
@@ -99,7 +143,22 @@
         <!-- My Bets Tab -->
         <div id="my-bets-tab" class="tab-content">
             <div class="card">
-                <h2>My Bets</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="margin: 0;">My Bets</h2>
+                    <div class="form-group" style="margin: 0; min-width: 200px;">
+                        <select id="myBetsFilter" onchange="filterMarkets('my-bets')">
+                            <option value="">All Categories</option>
+                            <option value="0">Sports</option>
+                            <option value="1">Politics</option>
+                            <option value="2">Crypto</option>
+                            <option value="3">Weather</option>
+                            <option value="4">Entertainment</option>
+                            <option value="5">Science</option>
+                            <option value="6">Business</option>
+                            <option value="7">Other</option>
+                        </select>
+                    </div>
+                </div>
                 <div id="myBets" class="loading">Loading your bets...</div>
             </div>
         </div>
