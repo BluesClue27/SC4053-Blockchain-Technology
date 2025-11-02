@@ -5,16 +5,17 @@ This document contains pre-funded test accounts provided by Hardhat for local de
 ## How to Use These Accounts
 
 1. Open MetaMask
-2. Click the account avatar (top right)
-3. Select "Import Account"
-4. Choose "Private Key" as the import method
+2. Click the account drop down menu (top left)
+3. Select "Add wallet"
+4. Select "Import an account"
 5. Paste the private key from the list below
-6. Repeat for as many accounts as you need
+6. Click "Import"
+7. Repeat for as many accounts as you need
 
 ## Important Notes
 
 - **Arbitrators:** You need to select at least **3 accounts** to act as arbitrators when creating a market
-- **Bidders:** You can use any accounts to place bets on markets. However creators and arbitrators cannot bet in the market they are appointed as arbitrators
+- **Bidders:** You can use any accounts to place bets on markets. However creators and arbitrators cannot bet in the market they created or are appointed as arbitrators respectively
 - **Market Creator:** Any account can create a market (requires 0.001 ETH creation fee)
 - All accounts are reset when you restart the local blockchain (`npm run node`)
 
