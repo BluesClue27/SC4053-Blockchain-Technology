@@ -39,6 +39,10 @@ See [First-Time Setup Guide](#-first-time-setup-guide) below for detailed step-b
 
 ## 🚀 First-Time Setup Guide
 
+### Step 0: Removing pre-existing configurations
+
+If you have ran this dApp before, be sure to remove all local account imports and local networks before re-deploying the hardhat node and smart contract. Otherwise there will be cache issues in the MetaMask wallet. 
+
 ### Step 1: Prerequisites Installation
 
 Before running this project, ensure you have the following installed:
