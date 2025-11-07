@@ -584,6 +584,5 @@ Key parameters in the PredictionMarket contract:
 - [Augur Protocol](https://www.augur.net/) - Decentralized prediction market platform
 - [Forepredict](https://forepredict.io/technology) - Modern prediction market implementation (design inspiration)
 - [Course GitHub Repository](https://github.com/BlockchainCourseNTU/resource/)
-- [Group members](/Group%20members.txt)
 
 ---
