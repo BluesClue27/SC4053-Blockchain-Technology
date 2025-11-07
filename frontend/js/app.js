@@ -5,7 +5,7 @@
  */
 // Contract configuration
 // Replace with deployed contract address
-const CONTRACT_ADDRESS = '0x5FbDB2315678afecb367f032d93F642f64180aa3'; 
+const CONTRACT_ADDRESS = '0x5FbDB2315678afecb367f032d93F642f64180aa3';
 // Add your contract ABI here
 const CONTRACT_ABI = [
     "function createMarket(string memory _description, string[] memory _outcomes, uint256 _resolutionTime, address[] memory _arbitrators, uint8 _category) external payable returns (uint256)",
@@ -179,7 +179,7 @@ function switchTab(tabName) {
     if (tabName === 'markets' && contract) {
         loadActiveMarkets();
         loadResolvedMarkets();
-    } 
+    }
     else if (tabName === 'my-bets' && contract) {
         loadMyBets();
     }
@@ -412,8 +412,8 @@ async function loadResolvedMarkets() {
                             userHasWithdrawn = await contract.hasUserWithdrawn(id, userAddress);
 
                             // Calculate refund (original bets minus fees: 1.5% platform + 1% arbitrator)
-                            const platformFee = 150; 
-                            const arbitratorFee = 100; 
+                            const platformFee = 150;
+                            const arbitratorFee = 100;
                             const totalFeeRate = platformFee + arbitratorFee;
                             const fee = (totalUserBets * totalFeeRate) / 10000;
                             userWinnings = totalUserBets - fee;
@@ -431,8 +431,8 @@ async function loadResolvedMarkets() {
                             const totalPool = parseFloat(ethers.utils.formatEther(market.totalBets));
                             const grossWinnings = (userBetEth * totalPool) / winningPool;
                             // Deduct fees: 1.5% platform + 1% arbitrator = 2.5%
-                            const platformFee = 150; 
-                            const arbitratorFee = 100; 
+                            const platformFee = 150;
+                            const arbitratorFee = 100;
                             const totalFeeRate = platformFee + arbitratorFee;
                             const fee = (grossWinnings * totalFeeRate) / 10000;
                             userWinnings = grossWinnings - fee;
@@ -457,7 +457,7 @@ async function loadResolvedMarkets() {
                     // This shows the correct fee even before any withdrawals
                     if (arbitratorFeeInfo.isArbitrator && arbitratorFeeInfo.isEligible) {
                         const totalBetsEth = parseFloat(ethers.utils.formatEther(market.totalBets));
-                        const arbitratorFeeRate = 100; 
+                        const arbitratorFeeRate = 100;
                         const totalExpectedFees = (totalBetsEth * arbitratorFeeRate) / 10000;
                         const eligibleCount = arbitratorFeeInfo.eligibleCount;
 
@@ -510,7 +510,7 @@ function renderMarketCard(market, probabilities, status, userWinnings = null, us
     );
 
     const outcomesHTML = market.outcomes.map((outcome, index) => {
-        const probability = probabilities[index] / 100; 
+        const probability = probabilities[index] / 100;
         const betAmount = ethers.utils.formatEther(market.outcomeTotals[index]);
         const isWinner = status === 'resolved' && index === market.winningOutcome;
 
@@ -547,8 +547,8 @@ function renderMarketCard(market, probabilities, status, userWinnings = null, us
                 <div class="bet-form">
                     <select id="winningOutcome${market.id}" class="resolution-select">
                         ${market.outcomes.map((outcome, index) =>
-                            `<option value="${index}">${outcome}</option>`
-                        ).join('')}
+            `<option value="${index}">${outcome}</option>`
+        ).join('')}
                     </select>
                     <button class="btn btn-resolve" onclick="voteOnOutcome(${market.id})">
                         Cast Vote
@@ -938,8 +938,8 @@ async function loadMyBets() {
                                 const totalBetsEth = parseFloat(ethers.utils.formatEther(market.totalBets));
                                 if (totalBetsEth > 0) {
                                     // Calculate refund (original bets minus fees: 1.5% platform + 1% arbitrator)
-                                    const platformFee = 150; 
-                                    const arbitratorFee = 100; 
+                                    const platformFee = 150;
+                                    const arbitratorFee = 100;
                                     const totalFeeRate = platformFee + arbitratorFee;
                                     const fee = (totalUserBetsInDraw * totalFeeRate) / 10000;
                                     potentialWinnings = totalUserBetsInDraw - fee;
@@ -960,8 +960,8 @@ async function loadMyBets() {
                                 const winningPool = parseFloat(ethers.utils.formatEther(market.outcomeTotals[market.winningOutcome]));
                                 const totalPool = parseFloat(ethers.utils.formatEther(market.totalBets));
                                 const grossWinnings = (totalWinningBetAmount * totalPool) / winningPool;
-                                const platformFee = 150; 
-                                const arbitratorFee = 100; 
+                                const platformFee = 150;
+                                const arbitratorFee = 100;
                                 const totalFeeRate = platformFee + arbitratorFee;
                                 const fee = (grossWinnings * totalFeeRate) / 10000;
                                 potentialWinnings = grossWinnings - fee;
@@ -984,8 +984,8 @@ async function loadMyBets() {
                             const totalPool = parseFloat(ethers.utils.formatEther(market.totalBets));
                             if (outcomePool > 0) {
                                 const grossWinnings = (outcomeData.totalAmount * totalPool) / outcomePool;
-                                const platformFee = 150; 
-                                const arbitratorFee = 100; 
+                                const platformFee = 150;
+                                const arbitratorFee = 100;
                                 const totalFeeRate = platformFee + arbitratorFee;
                                 const fee = (grossWinnings * totalFeeRate) / 10000;
                                 potentialEarnings = grossWinnings - fee;
@@ -996,8 +996,8 @@ async function loadMyBets() {
                             const totalPool = parseFloat(ethers.utils.formatEther(market.totalBets));
                             if (winningPool > 0) {
                                 const grossWinnings = (outcomeData.totalAmount * totalPool) / winningPool;
-                                const platformFee = 150; 
-                                const arbitratorFee = 100; 
+                                const platformFee = 150;
+                                const arbitratorFee = 100;
                                 const totalFeeRate = platformFee + arbitratorFee;
                                 const fee = (grossWinnings * totalFeeRate) / 10000;
                                 actualWinnings = grossWinnings - fee;
@@ -1006,7 +1006,7 @@ async function loadMyBets() {
                             // Draw - show refund amount for this specific outcome
                             const totalBetsEth = parseFloat(ethers.utils.formatEther(market.totalBets));
                             if (totalBetsEth > 0) {
-                                const platformFee = 150; 
+                                const platformFee = 150;
                                 const arbitratorFee = 100;
                                 const totalFeeRate = platformFee + arbitratorFee;
                                 const fee = (outcomeData.totalAmount * totalFeeRate) / 10000;
@@ -1254,14 +1254,14 @@ function showModal(title, message, type) {
         document.body.appendChild(modal);
 
         // Close on overlay click
-        modal.addEventListener('click', function(e) {
+        modal.addEventListener('click', function (e) {
             if (e.target === modal) {
                 dismissModal();
             }
         });
 
         // Close on ESC key
-        document.addEventListener('keydown', function(e) {
+        document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape' && modal.classList.contains('show')) {
                 dismissModal();
             }
